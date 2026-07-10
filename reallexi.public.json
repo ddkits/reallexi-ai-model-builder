@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-10T16:54:43.410Z",
+  "owner": "Reallexi LLC",
+  "copyright": "Copyright (c) 2026 Reallexi LLC. All rights reserved.",
+  "license": "Apache-2.0",
+  "profile": "public",
+  "coreBacklink": "https://llm.reallexi.io",
+  "repositories": {
+    "public": "https://github.com/ddkits/reallexi-ai-model-builder"
+  },
+  "github": {
+    "owner": "ddkits",
+    "packageScope": "@ddkits",
+    "actionsAccess": "Grant ddkits/reallexi-ai-model-builder read access under the private package and GHCR package settings so its automatic GITHUB_TOKEN can pull runtime artifacts in Actions.",
+    "localAccess": "Local installs use the developer or customer GitHub account with package read access; Reallexi servers do not mint GitHub package tokens."
+  },
+  "privateSourceExcluded": true,
+  "privateSourcePolicy": "The public package contains launchers, public documentation, and controlled runtime references. Application source, internal operations, secrets, and runtime data are excluded.",
+  "install": "Run npm run setup, configure access to the private package/image registry, then run npm run project.",
+  "packageManagers": {
+    "npm": {
+      "package": "@ddkits/ai-model-builder-core-private@1.0.0",
+      "registry": "https://npm.pkg.github.com/",
+      "access": "GitHub Packages read access required"
+    },
+    "githubPackages": {
+      "package": "@ddkits/ai-model-builder-core-private@1.0.0",
+      "registry": "https://npm.pkg.github.com/",
+      "scope": "@ddkits",
+      "access": "GitHub Actions can use GITHUB_TOKEN after ddkits/reallexi-ai-model-builder is granted package read access; local installs use a GitHub Packages read token from the user's GitHub account."
+    },
+    "ociImages": {
+      "backend": "ghcr.io/ddkits/ai-model-builder-backend:1.0.0",
+      "frontend": "ghcr.io/ddkits/ai-model-builder-frontend:1.0.0",
+      "registry": "ghcr.io",
+      "access": "container registry read token required unless published public"
+    }
+  },
+  "docker": {
+    "backendImage": "ghcr.io/ddkits/ai-model-builder-backend:1.0.0",
+    "frontendImage": "ghcr.io/ddkits/ai-model-builder-frontend:1.0.0",
+    "ports": {
+      "frontend": 55173,
+      "backend": 58080
+    }
+  },
+  "publicBoundary": {
+    "applicationSourceIncluded": false,
+    "internalOperationsIncluded": false,
+    "githubPagesHostedHere": false
+  }
+}

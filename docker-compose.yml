@@ -1,0 +1,32 @@
+services:
+  backend:
+    image: ${REALLEXI_BACKEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-backend:1.0.0}
+    restart: unless-stopped
+    environment:
+      PYTHONUNBUFFERED: "1"
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
+      HF_DATASETS_DISABLE_PROGRESS_BARS: "1"
+      DATASETS_VERBOSITY: error
+      TRANSFORMERS_VERBOSITY: error
+      TOKENIZERS_PARALLELISM: "false"
+      REALLEXI_PUBLIC_PACKAGE: "true"
+      REALLEXI_PROJECT_ROOT: ${PWD}
+      REALLEXI_BACKEND_DATA_DIR: ${PWD}/data/backend
+    volumes:
+      - ./data/backend:/app/backend/data
+    ports:
+      - "127.0.0.1:58080:58080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:58080/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    image: ${REALLEXI_FRONTEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-frontend:1.0.0}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:55173:55173"

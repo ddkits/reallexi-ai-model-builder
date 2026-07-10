@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-07-10T16:54:43.410Z",
+  "owner": "Reallexi LLC",
+  "version": "1.0.0",
+  "publicRepository": "ddkits/reallexi-ai-model-builder",
+  "publicPackage": "@ddkits/reallexi-ai-model-builder",
+  "privateCorePackage": "@ddkits/ai-model-builder-core-private@1.0.0",
+  "backendImage": "ghcr.io/ddkits/ai-model-builder-backend:1.0.0",
+  "frontendImage": "ghcr.io/ddkits/ai-model-builder-frontend:1.0.0",
+  "packageManagers": {
+    "npm": {
+      "package": "@ddkits/ai-model-builder-core-private@1.0.0",
+      "registry": "https://npm.pkg.github.com/",
+      "access": "GitHub Packages read access required"
+    },
+    "githubPackages": {
+      "package": "@ddkits/ai-model-builder-core-private@1.0.0",
+      "registry": "https://npm.pkg.github.com/",
+      "scope": "@ddkits",
+      "access": "GitHub Actions can use GITHUB_TOKEN after ddkits/reallexi-ai-model-builder is granted package read access; local installs use a GitHub Packages read token from the user's GitHub account."
+    },
+    "ociImages": {
+      "backend": "ghcr.io/ddkits/ai-model-builder-backend:1.0.0",
+      "frontend": "ghcr.io/ddkits/ai-model-builder-frontend:1.0.0",
+      "registry": "ghcr.io",
+      "access": "container registry read token required unless published public"
+    }
+  },
+  "integrity": "Use registry signatures, image digests, lockfiles, and access-controlled tokens in production. This public package intentionally does not include private core source."
+}

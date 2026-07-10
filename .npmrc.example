@@ -1,0 +1,7 @@
+# Example for private package pulls.
+# For GitHub Actions, prefer NODE_AUTH_TOKEN=${GITHUB_TOKEN}.
+# For local installs, set GITHUB_PACKAGES_TOKEN to a read-only package token
+# from the user's GitHub account.
+
+@ddkits:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}
