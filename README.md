@@ -37,6 +37,7 @@ troubleshooting.
 * [Public repository rules](docs/PUBLIC_REPOSITORY_GUIDE.md)
 * [Extensions and themes](docs/EXTENSIONS.md)
 * [Training source proposals](docs/TRAINING_DATA_SOURCES.md)
+* [Model artifacts and downloads](docs/MODEL_ARTIFACTS.md)
 * [Personal and commercial policy](docs/PERSONAL_COMMERCIAL_POLICY.md)
 * [Sponsorship](docs/SPONSORSHIP.md)
 

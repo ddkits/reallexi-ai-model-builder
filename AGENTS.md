@@ -32,5 +32,6 @@ npm run project
 * `docs/EXTENSIONS.md`: plugin and theme contribution boundary.
 * `docs/PLUGIN_HOOKS.md`: public hook categories.
 * `docs/SUPPORT_SLM_STACK.md`: public SLM and RAG defaults.
+* `docs/MODEL_ARTIFACTS.md`: public artifact identity and download guide.
 * `docs/TRAINING_DATA_SOURCES.md`: public source metadata contribution guide.
 * `reallexi.public.json`: generated public access manifest.

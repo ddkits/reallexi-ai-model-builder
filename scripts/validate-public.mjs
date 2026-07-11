@@ -33,6 +33,7 @@ const required = [
   'docs/PUBLIC_REPOSITORY_GUIDE.md',
   'docs/RELEASE_PROFILES.md',
   'docs/SUPPORT_SLM_STACK.md',
+  'docs/MODEL_ARTIFACTS.md',
   'docs/TRAINING_DATA_SOURCES.md',
   'scripts/setup-public.mjs',
   'scripts/validate-public.mjs',
