@@ -47,10 +47,12 @@ output passes format and plausible-size checks.
 
 ## Edit Without Overwriting History
 
-**Continue** preserves the checkpoint recipe. **Edit & Retrain** and **Edit
-Copy** load submitted settings into the full form so model, data sources,
-numeric values, adapters, limits, checkpoints, and requested formats can be
-reviewed before a new child job starts. The source job, proof, metrics, and
-artifact remain unchanged.
+**Continue** preserves the checkpoint recipe. **Edit & Retrain**, **Edit &
+Retry**, and **Clone & Edit** load submitted settings into the full form so
+model, data sources, numeric values, adapters, limits, checkpoint intervals,
+and requested formats can be reviewed before a new child job starts. Runtime
+checkpoint paths and prepared-cache internals stay with the source job. The
+source job, proof, metrics, and artifact remain unchanged.
+Edited names advance through clean `v2`, `v3`, and later versions.
 
 Core guidelines: https://llm.reallexi.io
