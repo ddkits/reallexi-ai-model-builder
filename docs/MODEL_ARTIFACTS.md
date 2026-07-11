@@ -47,12 +47,29 @@ output passes format and plausible-size checks.
 
 ## Edit Without Overwriting History
 
-**Continue** preserves the checkpoint recipe. **Edit & Retrain**, **Edit &
-Retry**, and **Clone & Edit** load submitted settings into the full form so
+**Continue** preserves an interrupted phase's checkpoint recipe. **Continue
+Training** loads a completed adapter or full model and advances phased jobs to
+the next source window. **Edit & Retrain**, **Edit & Retry**, and **Clone & Edit** load submitted settings into the full form so
 model, data sources, numeric values, adapters, limits, checkpoint intervals,
 and requested formats can be reviewed before a new child job starts. Runtime
 checkpoint paths and prepared-cache internals stay with the source job. The
 source job, proof, metrics, and artifact remain unchanged.
 Edited names advance through clean `v2`, `v3`, and later versions.
+
+## Custom Adapter Final Model
+
+The Artifacts workspace can configure a PEFT adapter from an uploaded ZIP, a
+local folder in the host-mounted data directory, or a Hugging Face adapter
+repository. The adapter must contain `adapter_config.json` and adapter model
+weights. Its recorded base model is auto-detected; an explicit mismatch blocks
+the merge.
+
+**Custom Adapter Final Model** safely merges the adapter into complete base
+weights, saves verified sharded SafeTensors plus tokenizer/config and ownership
+metadata, and packages a separate download that no longer requires PEFT. The
+source adapter, trained artifact, and regular standalone export are preserved.
+Local paths, uploaded ZIP members, and symbolic links are constrained before
+extraction or loading. A ready final model can also be selected in the Publish
+workspace for Hugging Face, GitHub Release, or an allowed local destination.
 
 Core guidelines: https://llm.reallexi.io

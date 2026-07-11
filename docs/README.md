@@ -25,6 +25,7 @@ release operations are intentionally excluded.
 
 * [Support SLM and RAG guide](SUPPORT_SLM_STACK.md)
 * [Model artifacts and downloads](MODEL_ARTIFACTS.md)
+* [Phased and incremental training](PHASED_TRAINING.md)
 * [Release profiles](RELEASE_PROFILES.md)
 * [Personal, commercial, EU, and USA policy](PERSONAL_COMMERCIAL_POLICY.md)
 * [Sponsorship](SPONSORSHIP.md)
