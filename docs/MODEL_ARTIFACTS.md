@@ -28,8 +28,8 @@ VRAM; runtime preflight can reject an unsafe configuration.
 
 1. Open a completed run under **Trained Models**.
 2. Review **Training Proof** and **Metrics** before judging quality.
-3. Use **Prompt Test** to test the trained artifact. When a standalone export
-   is ready, compare it with the original adapter-plus-base runtime.
+3. Use **Prompt Test** to test the trained artifact. When exports are ready,
+   compare the original runtime with regular standalone and custom final models.
 4. Open **Artifacts** to review parameter count, expected size, saved size,
    build status, and format-specific download.
 5. Use **Inspect Files** to open the dedicated file page. Text, JSON, model
