@@ -26,6 +26,7 @@ release operations are intentionally excluded.
 * [Support SLM and RAG guide](SUPPORT_SLM_STACK.md)
 * [Release profiles](RELEASE_PROFILES.md)
 * [Personal, commercial, EU, and USA policy](PERSONAL_COMMERCIAL_POLICY.md)
+* [Sponsorship](SPONSORSHIP.md)
 * [Security](../SECURITY.md)
 * [Support](../SUPPORT.md)
 

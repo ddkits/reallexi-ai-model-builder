@@ -44,6 +44,8 @@ regenerate the public package so later releases do not overwrite it.
 
 ## Sponsorship
 
-Community sponsorship is available at https://github.com/sponsors/Reallexi.
+Community sponsorship is available through GitHub Sponsors at
+https://github.com/sponsors/ddkits and Buy Me a Coffee at
+https://buymeacoffee.com/ddkits.
 Sponsorship does not grant project ownership, release authority, or acceptance
 of a requested change.

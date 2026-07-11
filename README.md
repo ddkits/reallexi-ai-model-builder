@@ -9,7 +9,7 @@ extension proposal surface. The application source is not distributed here.
 
 * Guidelines: https://llm.reallexi.io
 * Public repository: https://github.com/ddkits/reallexi-ai-model-builder
-* Sponsor: https://github.com/sponsors/Reallexi
+* Sponsor: https://github.com/sponsors/ddkits
 
 ## Quick Start
 
@@ -38,6 +38,7 @@ troubleshooting.
 * [Extensions and themes](docs/EXTENSIONS.md)
 * [Training source proposals](docs/TRAINING_DATA_SOURCES.md)
 * [Personal and commercial policy](docs/PERSONAL_COMMERCIAL_POLICY.md)
+* [Sponsorship](docs/SPONSORSHIP.md)
 
 ## Repository Boundary
 

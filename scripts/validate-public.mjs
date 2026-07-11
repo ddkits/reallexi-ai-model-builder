@@ -29,6 +29,7 @@ const required = [
   'docs/EXTENSIONS.md',
   'docs/PLUGIN_HOOKS.md',
   'docs/PERSONAL_COMMERCIAL_POLICY.md',
+  'docs/SPONSORSHIP.md',
   'docs/PUBLIC_REPOSITORY_GUIDE.md',
   'docs/RELEASE_PROFILES.md',
   'docs/SUPPORT_SLM_STACK.md',
@@ -60,6 +61,18 @@ const missing = required.filter((file) => !fs.existsSync(inRoot(file)));
 if (missing.length > 0) {
   console.error('[public] Missing required files: ' + missing.join(', '));
   process.exit(1);
+}
+
+const fundingConfig = fs.readFileSync(inRoot('.github/FUNDING.yml'), 'utf8');
+for (const requiredFunding of [
+  'github: ddkits',
+  'buy_me_a_coffee: ddkits',
+  'https://reallexi.com/sponsor',
+]) {
+  if (!fundingConfig.includes(requiredFunding)) {
+    console.error('[public] Missing canonical funding channel: ' + requiredFunding);
+    process.exit(1);
+  }
 }
 
 function collectFiles(directory) {
@@ -100,7 +113,7 @@ const packageMetadata = JSON.parse(fs.readFileSync(inRoot('package.json'), 'utf8
 const publicScripts = new Set(Object.keys(packageMetadata.scripts || {}));
 const allowedGithubPrefixes = [
   'https://github.com/ddkits/reallexi-ai-model-builder',
-  'https://github.com/sponsors/Reallexi',
+  'https://github.com/sponsors/ddkits',
 ];
 
 for (const file of publicTextFiles) {

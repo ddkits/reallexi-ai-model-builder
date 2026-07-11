@@ -10,10 +10,20 @@
     "type": "git",
     "url": "git+https://github.com/ddkits/reallexi-ai-model-builder.git"
   },
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/Reallexi"
-  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/ddkits"
+    },
+    {
+      "type": "buymeacoffee",
+      "url": "https://buymeacoffee.com/ddkits"
+    },
+    {
+      "type": "custom",
+      "url": "https://reallexi.com/sponsor"
+    }
+  ],
   "scripts": {
     "setup": "node scripts/setup-public.mjs",
     "validate": "node scripts/validate-public.mjs",
@@ -21,7 +31,7 @@
     "dev": "node scripts/project-public.mjs"
   },
   "reallexi": {
-    "generatedAt": "2026-07-10T16:54:43.410Z",
+    "generatedAt": "2026-07-11T00:00:20.488Z",
     "publicRepository": "ddkits/reallexi-ai-model-builder",
     "privateCorePackage": "@ddkits/ai-model-builder-core-private@1.0.0",
     "backendImage": "ghcr.io/ddkits/ai-model-builder-backend:1.0.0",
