@@ -35,6 +35,7 @@ const required = [
   'docs/SUPPORT_SLM_STACK.md',
   'docs/MODEL_ARTIFACTS.md',
   'docs/PHASED_TRAINING.md',
+  'docs/GPU_ACCELERATION.md',
   'docs/TRAINING_DATA_SOURCES.md',
   'scripts/setup-public.mjs',
   'scripts/validate-public.mjs',
