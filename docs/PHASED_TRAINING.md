@@ -2,9 +2,27 @@
 
 Copyright (c) 2026 Reallexi LLC. All rights reserved.
 
-AI Model Builder can divide a large sample target into bounded phases. Each
-phase saves a usable local adapter or full-model artifact before the next phase
-starts, which gives constrained systems a shorter path to a testable model.
+AI Model Builder divides one large sample target into bounded, non-overlapping
+training windows. Every successful phase saves a usable LoRA adapter or full
+model, checkpoint, metrics, provenance, and lineage before the next configured
+window starts automatically.
+
+The internal phase records stay separate for recovery and auditability. The UI
+groups those records as one logical model-training chain so contributors and
+builders see truthful overall progress instead of a stack of unrelated jobs.
+
+## Lifecycle At A Glance
+
+1. Plan one total sample target.
+2. Resolve a RAM-aware or fixed phase window.
+3. Prepare and train only that non-overlapping window.
+4. Save checkpoint, proof, metrics, and a usable model artifact.
+5. Queue the next configured window automatically.
+6. Repeat until the original target is reached.
+
+If a phase is interrupted, **Continue Phase** returns to the same window. It
+does not skip forward, repeat a completed phase as a new model, or extend the
+configured target.
 
 ## Public Behavior Contract
 
@@ -17,22 +35,120 @@ starts, which gives constrained systems a shorter path to a testable model.
    filters so all available selected sources can share each phase.
 4. Every completed phase records its sample range, source provenance, metrics,
    checkpoint, artifact type, parent job, and root lineage.
-5. **Continue Training** loads the completed adapter or full model and advances
-   to the next non-overlapping source window.
-6. **Continue** on a failed or cancelled phase resumes that same phase and can
-   reuse its prepared rows. It does not advance the source window.
-7. Continuing after the configured target extends the target by one phase. The
-   previous good artifact remains available if a later source is exhausted.
+5. Successful intermediate phases load their completed adapter or full model
+   and advance to the next non-overlapping window automatically.
+6. **Continue Phase** on a failed or cancelled phase resumes that same phase and
+   can reuse its checkpoint and prepared rows.
+7. Automatic training stops at the configured target. Use an intentional
+   clone, edit, or retrain workflow to create a different target or lineage.
 8. A zero checkpoint interval disables periodic saves; the required phase-end
    checkpoint is still written.
+
+## Progress Is Chain Progress
+
+The phase worker can finish 100% of its local window while the full model chain
+is only partially complete. The overall progress bar is based on processed
+samples across the configured target.
+
+For example:
+
+| Value | Samples |
+| --- | ---: |
+| Configured target | 20,000 |
+| Samples completed after phase 5 | 1,250 |
+| Local phase completion | 100% |
+| Logical chain completion | 6.25% |
+
+The UI uses **Advancing** between a successful intermediate phase and its next
+queued child. **Completed** is reserved for the final configured target.
+
+## Five-Phase Example
+
+For a 5,000-sample target and 1,000 samples per phase:
+
+| Phase | Sample range | Overall result |
+| --- | --- | ---: |
+| 1 / 5 | 0-1,000 | 20%; phase 2 starts automatically |
+| 2 / 5 | 1,000-2,000 | 40%; phase 3 starts automatically |
+| 3 / 5 | 2,000-3,000 | 60%; phase 4 starts automatically |
+| 4 / 5 | 3,000-4,000 | 80%; phase 5 starts automatically |
+| 5 / 5 | 4,000-5,000 | 100%; configured target complete |
+
+Later phases consume the previous phase artifact internally. The grouped UI
+still displays the original selected model as the logical chain's model.
+
+## Recovery Flow
+
+**Continue Phase** is shown only when the current logical phase is failed or
+cancelled:
+
+1. Review the latest phase logs and resource notes.
+2. Choose **Continue Phase** once.
+3. Resume the newest valid model checkpoint when available.
+4. Reuse prepared rows when they still match the recipe.
+5. Otherwise prepare the same deterministic source window again.
+6. Resume automatic phase advancement after the recovery succeeds.
+
+Repeated clicks while a recovery is already queued or active reuse one
+canonical attempt. If recovery is interrupted again, the next Continue Phase
+follows the newest failed attempt and its most recent safe state.
+
+| Situation | Public state | Next action |
+| --- | --- | --- |
+| User pause | Paused | Resume the same worker |
+| User stop | Cancelled | Continue Phase |
+| Worker or memory failure | Failed | Review resources, then Continue Phase |
+| Restart during work | Failed/recoverable | Continue Phase |
+| Restart between artifact save and next queue | Advancing | No action; automatic reconciliation resumes |
+| Artifact cannot be saved | Failed | Resolve storage/access, then Continue Phase |
+
+A Stop request prevents automatic advancement even if it arrives near the end
+of evaluation or artifact saving.
+
+## Why Internal Records Still Exist
+
+Each phase retains its own:
+
+* bounded sample range and source allocation;
+* prepared-data fingerprint;
+* interval and phase-end checkpoints;
+* metrics and resource plan;
+* training proof and source provenance;
+* LoRA adapter or full-model artifact; and
+* parent, root, and stable phase-chain lineage.
+
+These records make recovery and audit possible. Grouping changes presentation,
+not history: a user sees one model chain while maintainers can still trace every
+successful or interrupted phase.
 
 With multiple selected sources, each available source receives a deterministic
 fair share of every phase. Missing, gated, incompatible, or exhausted sources
 are recorded for review.
 
+For a 1,000-sample phase and four sources, the nominal allocation is 250 rows
+per source. The next phase advances each source to its next allocation instead
+of repeating the previous rows.
+
 Phasing limits dataset preparation and run duration. It does not make an
 oversized base model fit into RAM or VRAM; model resource preflight still
 applies. LoRA adapters are the faster low-memory choice. Full-model training
 updates and saves all weights and requires substantially more resources.
+
+## Contribution Opportunities
+
+Public contributors can improve phased training without exposing private
+application source by proposing:
+
+* clearer lifecycle and recovery documentation;
+* accessibility and mobile presentation improvements;
+* synthetic phase-progress examples;
+* dataset metadata and provenance reviews;
+* reproducible failure reports with secrets and customer material removed;
+* test scenarios for source exhaustion, interruption, and artifact identity;
+* plugin or theme proposals through documented manifests; and
+* translations of public-safe concepts and terminology.
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) and
+[PLUGIN_HOOKS.md](PLUGIN_HOOKS.md) before submitting a change.
 
 Core guidelines: https://llm.reallexi.io

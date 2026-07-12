@@ -80,7 +80,7 @@ for (const requiredFunding of [
 function collectFiles(directory) {
   const files = [];
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === '.git') continue;
+    if (['.git', '.env', 'data', 'node_modules'].includes(entry.name)) continue;
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...collectFiles(target));
     if (entry.isFile()) files.push(target);
