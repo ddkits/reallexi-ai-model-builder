@@ -157,6 +157,10 @@ the healthy sources. The proof stores every source's exact `sample_start` and
 rows cannot be learned twice. Prepared-dataset metadata preserves this budget
 evidence during interruption recovery.
 
+Official RSS/Atom inputs are single-snapshot sources. Versioned web corpora are
+used for large multi-phase coverage; live feed snapshots do not advance through
+shifting positional offsets in later phases.
+
 Phasing limits dataset preparation and run duration. It does not make an
 oversized base model fit into RAM or VRAM; model resource preflight still
 applies. LoRA adapters are the faster low-memory choice. Full-model training
