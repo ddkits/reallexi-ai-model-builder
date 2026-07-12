@@ -117,6 +117,12 @@ window.
 A Stop request prevents automatic advancement even if it arrives near the end
 of evaluation or artifact saving.
 
+CUDA plans retain headroom for drivers, kernels, and allocator fragmentation.
+Full-model preflight includes optimizer, gradient, and activation memory. After
+a CUDA OOM, an SLM/LLM recovery can change full-model tuning to LoRA, reduce the
+micro-batch, preserve effective batch through accumulation, and reuse the exact
+prepared phase rows.
+
 ## Why Internal Records Still Exist
 
 Each phase retains its own:

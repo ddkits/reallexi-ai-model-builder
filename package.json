@@ -31,7 +31,7 @@
     "dev": "node scripts/project-public.mjs"
   },
   "reallexi": {
-    "generatedAt": "2026-07-12T18:15:21.217Z",
+    "generatedAt": "2026-07-12T22:26:24.214Z",
     "publicRepository": "ddkits/reallexi-ai-model-builder",
     "privateCorePackage": "@ddkits/ai-model-builder-core-private@1.0.0",
     "backendImage": "ghcr.io/ddkits/ai-model-builder-backend:1.0.0",
