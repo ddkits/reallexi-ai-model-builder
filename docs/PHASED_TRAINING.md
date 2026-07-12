@@ -91,13 +91,19 @@ cancelled:
 1. Review the latest phase logs and resource notes.
 2. Choose **Continue Phase** once.
 3. Resume the newest valid model checkpoint when available.
-4. Reuse prepared rows when they still match the recipe.
+4. Reuse prepared rows only when their recipe and exact phase-window
+   fingerprint match.
 5. Otherwise prepare the same deterministic source window again.
 6. Resume automatic phase advancement after the recovery succeeds.
 
 Repeated clicks while a recovery is already queued or active reuse one
 canonical attempt. If recovery is interrupted again, the next Continue Phase
 follows the newest failed attempt and its most recent safe state.
+
+A prepared file from a parent or previous phase is rejected even when it is in
+the same lineage. The mismatch stays in the job's warning log, and recovery
+prepares fresh rows for the interrupted phase instead of duplicating an older
+window.
 
 | Situation | Public state | Next action |
 | --- | --- | --- |
