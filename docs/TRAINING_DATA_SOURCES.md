@@ -5,6 +5,22 @@ Copyright (c) 2026 Reallexi LLC. All rights reserved.
 Public source contributions should improve dataset discovery without exposing
 private loaders, training internals, or customer data.
 
+## Web, News, And Feed Collection
+
+The application exposes a one-click **Select Web + News + Feeds** collection.
+It combines versioned FineWeb/FineWeb-Edu, C4 news-like text, Wikipedia,
+historical news corpora, academic papers, biomedical QA, legislation, and
+government reports with bounded official NASA, JPL, SEC, and arXiv RSS/Atom
+snapshots.
+
+This is intentionally broad, but it cannot mean every page on every website.
+Private, paywalled, disallowed, copyrighted, deleted, and unsafe pages are not
+automatically scraped. Every catalog entry carries a review URL, provenance,
+subject tags, sample cap, freshness type, and license policy. Live feeds are
+HTTPS-only, bounded, protected from private-network access, and captured once
+per chain so changing feed order cannot duplicate later phases. Current facts
+usually belong in RAG rather than permanent model weights.
+
 ## Source Categories
 
 AI Model Builder tracks source metadata for categories such as support, chat,
