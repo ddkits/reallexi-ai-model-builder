@@ -47,20 +47,26 @@ configured target.
 ## Progress Is Chain Progress
 
 The phase worker can finish 100% of its local window while the full model chain
-is only partially complete. The overall progress bar is based on processed
-samples across the configured target.
+is only partially complete. The overall progress bar sums actual
+`trained_samples` from one canonical successful job per phase, excludes
+recovery duplicates, and adds only the prepared-row estimate for an active
+phase. It never awards progress for rows a source did not return.
 
 For example:
 
 | Value | Samples |
 | --- | ---: |
 | Configured target | 20,000 |
-| Samples completed after phase 5 | 1,250 |
+| Actual rows learned after phase 5 | 1,250 |
 | Local phase completion | 100% |
 | Logical chain completion | 6.25% |
 
 The UI uses **Advancing** between a successful intermediate phase and its next
 queued child. **Completed** is reserved for the final configured target.
+
+If an earlier phase has a real shortfall, the chain keeps the same 20,000-row
+target and continues until cumulative learned rows reach it. Additional phase
+numbers complete the original target; they do not increase it.
 
 ## Five-Phase Example
 
@@ -117,17 +123,27 @@ Each phase retains its own:
 * LoRA adapter or full-model artifact; and
 * parent, root, and stable phase-chain lineage.
 
+The grouped Logs tab reads the linked internal jobs chronologically, labels
+each entry with its job number, and exposes preparation, source-budget,
+checkpoint, training, evaluation, artifact-save, transition, and failure
+evidence. A successful phase writes an explicit evidence line with learned rows
+for the job, cumulative learned rows versus target, and its source budget.
+
 These records make recovery and audit possible. Grouping changes presentation,
 not history: a user sees one model chain while maintainers can still trace every
 successful or interrupted phase.
 
 With multiple selected sources, each available source receives a deterministic
 fair share of every phase. Missing, gated, incompatible, or exhausted sources
-are recorded for review.
+are recorded for review. Their unused allocation is reassigned to sources that
+still have usable rows, up to the recipe's per-source limits.
 
 For a 1,000-sample phase and four sources, the nominal allocation is 250 rows
-per source. The next phase advances each source to its next allocation instead
-of repeating the previous rows.
+per source. If one source is unavailable, its 250 rows are redistributed among
+the healthy sources. The proof stores every source's exact `sample_start` and
+`sample_end`; those end cursors become the next phase's starts so redistributed
+rows cannot be learned twice. Prepared-dataset metadata preserves this budget
+evidence during interruption recovery.
 
 Phasing limits dataset preparation and run duration. It does not make an
 oversized base model fit into RAM or VRAM; model resource preflight still
