@@ -31,6 +31,12 @@ When a selected optional source is unavailable, gated, removed, or incompatible,
 AI Model Builder records it as skipped and continues with the sources that
 loaded. Strict all-or-nothing validation belongs in private release testing.
 
+Use the maintained namespace and a split shown by the current dataset card.
+Examples include `rajpurkar/squad`, `Yelp/yelp_review_full`,
+`fancyzhx/amazon_polarity`, and UltraChat's `train_sft` split. Source metadata
+corrections are valuable public contributions and should include the upstream
+dataset link used for verification.
+
 ## License Policies
 
 * `permissive`: usually suitable for commercial review, but still verify.
