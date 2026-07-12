@@ -30,6 +30,46 @@ Approved installers receive the runtime through controlled package systems:
 See [Core Access](docs/CORE_DISTRIBUTION_GITHUB.md) for authentication and
 troubleshooting.
 
+## Automatic Phased Training
+
+Large targets can be divided into bounded, non-overlapping windows. Each
+successful phase saves checkpoint evidence and a usable adapter or full model,
+then starts the next configured window automatically. The UI groups internal
+phase history as one logical model chain and reports progress across the total
+sample target.
+
+If the current phase is interrupted, **Continue Phase** resumes that same
+window from its latest safe state. Automatic training stops at the configured
+target and never extends it silently. See the detailed
+[Phased Training guide](docs/PHASED_TRAINING.md).
+
+## Why Contribute
+
+The public repository is designed for useful work that does not require private
+application source. Community contributions can improve:
+
+* setup, troubleshooting, and model-building documentation;
+* accessibility, responsive guidance, and translations;
+* public dataset metadata, license review, and provenance notes;
+* reproducible test and evaluation scenarios;
+* extension, theme, source-catalog, and template proposals; and
+* issue triage and safe synthetic examples.
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), keep every example public-safe,
+and explain user impact plus validation evidence.
+
+## Support The Ecosystem
+
+Community funding supports compatibility work, documentation, validation,
+accessibility, and contribution review:
+
+* [GitHub Sponsors](https://github.com/sponsors/ddkits)
+* [Buy Me a Coffee](https://buymeacoffee.com/ddkits)
+* [Reallexi sponsorship](https://reallexi.com/sponsor)
+
+Sponsorship does not transfer ownership, maintainer access, voting rights, or
+release authority. See [Sponsorship](docs/SPONSORSHIP.md) for the public policy.
+
 ## Documentation
 
 * [Documentation index](docs/README.md)

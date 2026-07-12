@@ -47,9 +47,11 @@ output passes format and plausible-size checks.
 
 ## Edit Without Overwriting History
 
-**Continue** preserves an interrupted phase's checkpoint recipe. **Continue
-Training** loads a completed adapter or full model and advances phased jobs to
-the next source window. **Edit & Retrain**, **Edit & Retry**, and **Clone & Edit** load submitted settings into the full form so
+**Continue Phase** preserves an interrupted phase's checkpoint recipe and
+reuses that phase's sample window. Successful phased runs load the completed
+adapter or full model and advance automatically; intermediate phases do not
+require a manual Continue action. **Edit & Retrain**, **Edit & Retry**, and
+**Clone & Edit** load submitted settings into the full form so
 model, data sources, numeric values, adapters, limits, checkpoint intervals,
 and requested formats can be reviewed before a new child job starts. Runtime
 checkpoint paths and prepared-cache internals stay with the source job. The
@@ -62,7 +64,9 @@ The Artifacts workspace can configure a PEFT adapter from an uploaded ZIP, a
 local folder in the host-mounted data directory, or a Hugging Face adapter
 repository. The adapter must contain `adapter_config.json` and adapter model
 weights. Its recorded base model is auto-detected; an explicit mismatch blocks
-the merge.
+the merge. Hugging Face validation also checks repository access and root
+adapter weights before accepting the configuration. An inaccessible base is
+reported with its direct model page before an export worker is started.
 
 **Custom Adapter Final Model** safely merges the adapter into complete base
 weights, saves verified sharded SafeTensors plus tokenizer/config and ownership
