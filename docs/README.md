@@ -25,6 +25,7 @@ release operations are intentionally excluded.
 
 * [Support SLM and RAG guide](SUPPORT_SLM_STACK.md)
 * [Model artifacts and downloads](MODEL_ARTIFACTS.md)
+* [Hugging Face account workspace](HUGGINGFACE_WORKSPACE.md)
 * [Phased and incremental training](PHASED_TRAINING.md)
 * [GPU acceleration and device selection](GPU_ACCELERATION.md)
 * [Release profiles](RELEASE_PROFILES.md)

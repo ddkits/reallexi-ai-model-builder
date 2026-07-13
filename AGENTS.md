@@ -33,6 +33,7 @@ npm run project
 * `docs/PLUGIN_HOOKS.md`: public hook categories.
 * `docs/SUPPORT_SLM_STACK.md`: public SLM and RAG defaults.
 * `docs/MODEL_ARTIFACTS.md`: public artifact identity and download guide.
+* `docs/HUGGINGFACE_WORKSPACE.md`: public Hub workspace and contribution guide.
 * `docs/PHASED_TRAINING.md`: public phased and incremental training behavior.
 * `docs/TRAINING_DATA_SOURCES.md`: public source metadata contribution guide.
 * `reallexi.public.json`: generated public access manifest.
