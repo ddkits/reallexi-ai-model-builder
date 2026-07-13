@@ -34,6 +34,7 @@ const required = [
   'docs/RELEASE_PROFILES.md',
   'docs/SUPPORT_SLM_STACK.md',
   'docs/MODEL_ARTIFACTS.md',
+  'docs/HUGGINGFACE_WORKSPACE.md',
   'docs/PHASED_TRAINING.md',
   'docs/GPU_ACCELERATION.md',
   'docs/TRAINING_DATA_SOURCES.md',

@@ -43,6 +43,16 @@ window from its latest safe state. Automatic training stops at the configured
 target and never extends it silently. See the detailed
 [Phased Training guide](docs/PHASED_TRAINING.md).
 
+## Hugging Face Account Workspace
+
+The local application centralizes Hugging Face models, datasets, Spaces, and
+organization namespaces in one responsive workspace. Maintainers can create and
+configure repositories, control Space lifecycle and hardware, manage public
+variables and write-only secrets, and use exact confirmation for permanent
+deletion. Remote controls require both local admin authorization and the Hub
+account's own permissions. See the public-safe
+[Hugging Face workspace guide](docs/HUGGINGFACE_WORKSPACE.md).
+
 ## Why Contribute
 
 The public repository is designed for useful work that does not require private
@@ -78,6 +88,7 @@ release authority. See [Sponsorship](docs/SPONSORSHIP.md) for the public policy.
 * [Extensions and themes](docs/EXTENSIONS.md)
 * [Training source proposals](docs/TRAINING_DATA_SOURCES.md)
 * [Model artifacts and downloads](docs/MODEL_ARTIFACTS.md)
+* [Hugging Face account workspace](docs/HUGGINGFACE_WORKSPACE.md)
 * [Phased and incremental training](docs/PHASED_TRAINING.md)
 * [Personal and commercial policy](docs/PERSONAL_COMMERCIAL_POLICY.md)
 * [Sponsorship](docs/SPONSORSHIP.md)
