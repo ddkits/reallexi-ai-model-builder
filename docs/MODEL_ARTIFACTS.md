@@ -83,4 +83,10 @@ Local paths, uploaded ZIP members, and symbolic links are constrained before
 extraction or loading. A ready final model can also be selected in the Publish
 workspace for Hugging Face, GitHub Release, or an allowed local destination.
 
+Hugging Face publication uses a verified container-local snapshot so large
+weights stay stable when project data is mounted from Windows. Standard
+HTTP/LFS transport avoids Docker/Xet missing-file failures. Successful publish
+proof records the file count and bytes; failures remain in the training log and
+job metrics so the same verified export can be retried without rebuilding it.
+
 Core guidelines: https://llm.reallexi.io
