@@ -37,8 +37,9 @@ configured target.
    checkpoint, artifact type, parent job, and root lineage.
 5. Successful intermediate phases load their completed adapter or full model
    and advance to the next non-overlapping window automatically.
-6. **Continue Phase** on a failed or cancelled phase resumes that same phase and
-   can reuse its checkpoint and prepared rows.
+6. **Continue Phase** on a failed or cancelled phase resumes that same sample
+   start and can reuse its valid checkpoint and prepared rows. OOM recovery may
+   narrow the current window without skipping the remainder.
 7. Automatic training stops at the configured target. Use an intentional
    clone, edit, or retrain workflow to create a different target or lineage.
 8. A zero checkpoint interval disables periodic saves; the required phase-end
@@ -123,6 +124,15 @@ a CUDA OOM, an SLM/LLM recovery can change full-model tuning to LoRA, reduce the
 micro-batch, preserve effective batch through accumulation, and reuse the exact
 prepared phase rows.
 
+If LoRA, micro-batch, and context are already at their safe minimums, recovery
+reduces the bounded phase size down to a 250-row floor and recomputes the honest
+remaining phase count. Hub and URL sources are streamed for phased windows so
+selecting many large catalogs does not materialize every complete dataset in
+RAM. More than six selected catalogs rotate through deterministic six-source
+phase groups while their individual cursors carry forward. Checkpoints older
+than their database job record are rejected, and a newly reused numeric job ID
+clears stale generated storage before work begins.
+
 ## Why Internal Records Still Exist
 
 Each phase retains its own:
@@ -143,7 +153,8 @@ for the job, cumulative learned rows versus target, and its source budget.
 
 These records make recovery and audit possible. Grouping changes presentation,
 not history: a user sees one model chain while maintainers can still trace every
-successful or interrupted phase.
+successful or interrupted phase. Explicit deletion removes the chain's scoped
+generated files so a future job ID cannot inherit stale checkpoints or exports.
 
 With multiple selected sources, each available source receives a deterministic
 fair share of every phase. Missing, gated, incompatible, or exhausted sources
