@@ -45,6 +45,13 @@ merged, saved, converted, and checked. The UI reports queued, building, ready,
 or failed, with current phase and progress. A download appears only after the
 output passes format and plausible-size checks.
 
+For the adapter created by a completed training job, use **Trained Models →
+Artifacts → Merge Trained Adapter + Base Model**. Enter a new merged model
+name, build, then download the verified `<name>-safetensors.zip`. The name is
+stored inside `reallexi-model.json` and displayed in the generated model card.
+The separate **Custom Adapter Merge** area is for an adapter supplied outside
+that training job.
+
 ## Edit Without Overwriting History
 
 **Continue Phase** preserves an interrupted phase's checkpoint recipe and
