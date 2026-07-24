@@ -27,6 +27,7 @@ const required = [
   'docs/README.md',
   'docs/CORE_DISTRIBUTION_GITHUB.md',
   'docs/EXTENSIONS.md',
+  'docs/FEATURE_ACCESS_GUIDE.md',
   'docs/PLUGIN_HOOKS.md',
   'docs/PERSONAL_COMMERCIAL_POLICY.md',
   'docs/SPONSORSHIP.md',

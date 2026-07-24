@@ -18,6 +18,7 @@ release operations are intentionally excluded.
 * [Contribution guide](../CONTRIBUTING.md)
 * [Governance](../GOVERNANCE.md)
 * [Extensions and themes](EXTENSIONS.md)
+* [Feature and extension access](FEATURE_ACCESS_GUIDE.md)
 * [Public plugin contract](PLUGIN_HOOKS.md)
 * [Training source proposals](TRAINING_DATA_SOURCES.md)
 

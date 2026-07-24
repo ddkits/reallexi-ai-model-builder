@@ -86,6 +86,7 @@ release authority. See [Sponsorship](docs/SPONSORSHIP.md) for the public policy.
 * [Contributing](CONTRIBUTING.md)
 * [Public repository rules](docs/PUBLIC_REPOSITORY_GUIDE.md)
 * [Extensions and themes](docs/EXTENSIONS.md)
+* [Feature and extension access](docs/FEATURE_ACCESS_GUIDE.md)
 * [Training source proposals](docs/TRAINING_DATA_SOURCES.md)
 * [Model artifacts and downloads](docs/MODEL_ARTIFACTS.md)
 * [Hugging Face account workspace](docs/HUGGINGFACE_WORKSPACE.md)

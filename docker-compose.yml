@@ -10,6 +10,7 @@ services:
       TRANSFORMERS_VERBOSITY: error
       TOKENIZERS_PARALLELISM: "false"
       REALLEXI_PUBLIC_PACKAGE: "true"
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       REALLEXI_PROJECT_ROOT: ${PWD}
       REALLEXI_BACKEND_DATA_DIR: ${PWD}/data/backend
     volumes:
