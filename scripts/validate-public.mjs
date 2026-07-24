@@ -72,7 +72,7 @@ const fundingConfig = fs.readFileSync(inRoot('.github/FUNDING.yml'), 'utf8');
 for (const requiredFunding of [
   'github: ddkits',
   'buy_me_a_coffee: ddkits',
-  'https://reallexi.com/sponsor',
+  'https://reallexi.io/sponsor',
 ]) {
   if (!fundingConfig.includes(requiredFunding)) {
     console.error('[public] Missing canonical funding channel: ' + requiredFunding);

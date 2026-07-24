@@ -75,7 +75,7 @@ accessibility, and contribution review:
 
 * [GitHub Sponsors](https://github.com/sponsors/ddkits)
 * [Buy Me a Coffee](https://buymeacoffee.com/ddkits)
-* [Reallexi sponsorship](https://reallexi.com/sponsor)
+* [Reallexi sponsorship](https://reallexi.io/sponsor)
 
 Sponsorship does not transfer ownership, maintainer access, voting rights, or
 release authority. See [Sponsorship](docs/SPONSORSHIP.md) for the public policy.

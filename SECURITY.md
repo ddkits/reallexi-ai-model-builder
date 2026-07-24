@@ -4,7 +4,7 @@ Do not report suspected vulnerabilities in public issues.
 
 ## Reporting
 
-Email security reports to security@reallexi.com. If GitHub private vulnerability
+Email security reports to info@reallexi.io. If GitHub private vulnerability
 reporting is enabled for this repository, you may use that instead.
 
 Include:
