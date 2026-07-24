@@ -57,6 +57,25 @@ Set `REALLEXI_ACCELERATOR_BACKEND` to `auto` (default), `nvidia`, `amd`, or `cpu
 before `npm run project`. An unavailable forced backend safely resolves to CPU.
 
 For NVIDIA, verify `nvidia-smi` works on the host and inside a test container.
+On Docker Desktop/WSL2, use the NVIDIA overlay so the backend installs the CUDA
+wheel before the container starts:
+
+```sh
+docker compose -f docker-compose.nvidia.yml build --no-cache backend
+docker compose -f docker-compose.nvidia.yml up
+```
+
+The index and version can be overridden without editing YAML. In PowerShell,
+for example: `$env:TORCH_INDEX_URL="https://download.pytorch.org/whl/cu128"`.
+
+The NVIDIA file sets `TORCH_INDEX_URL` to the CUDA 12.8 wheel repository and
+`TORCH_VERSION=2.11.0` (the RTX 5090 driver supports it) and
+`REALLEXI_ACCELERATOR_BACKEND=cuda`. The Dockerfile intentionally removes Torch
+from the general requirements pass and installs it afterward; otherwise the
+requirements pass resolves the CPU/default-index wheel before the CUDA index can
+take effect. If Docker reports `permission denied` on its engine pipe, start
+Docker Desktop and ensure WSL2 GPU integration is enabled; that is a host runtime
+permission issue, not a pip index issue.
 For AMD ROCm, use native Linux with a supported amdgpu driver and verify
 `/dev/kfd` and `/dev/dri` exist. Do not install a CUDA and ROCm PyTorch wheel into
 the same backend image. In Windows Task Manager, inspect the CUDA/Compute engine;

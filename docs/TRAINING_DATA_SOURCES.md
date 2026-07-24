@@ -25,7 +25,28 @@ usually belong in RAG rather than permanent model weights.
 
 AI Model Builder tracks source metadata for categories such as support, chat,
 RAG and QA, code, reasoning, safety, summarization, finance, multilingual,
-legal, healthcare, vision captions, and language modeling.
+legal, healthcare, jobs and resumes, vision captions, and language modeling.
+
+## Jobs And Resumes
+
+The **Jobs & Resumes** category separates selectable datasets from learning
+references. Official Open Government Licence - Canada CSVs provide versioned
+occupation duties, employment requirements, and skill definitions that the
+loader can use directly. Open DOL, USAJOBS, CareerOneStop, O*NET, ESCO, BLS,
+UK National Careers Service, EEOC, NIST, and JSON Resume resources open for
+review instead of being sent to the loader as raw HTML, PDF, or archives.
+
+Synthetic resume/job datasets are suitable for bounded parsing and retrieval
+prototypes, and the synthetic fairness set supports narrow evaluation. They do
+not prove that a production hiring workflow is accurate or fair. No model can
+guarantee that a resume will rank first, receive an interview, or get a job.
+Only map requirements to evidence the applicant actually has; never invent
+experience, credentials, results, or keywords, and keep a human reviewer in the
+loop for every candidate-affecting use.
+
+Do not scrape resumes, professional profiles, or job boards merely because they
+are publicly reachable. Use consented and minimized applicant material only
+after privacy, employment-law, provenance, terms, and license review.
 
 ## Required Metadata
 
@@ -38,6 +59,10 @@ Every proposed source should include:
 * license name and license policy;
 * suggested sample cap;
 * notes about quality, safety, and commercial review.
+
+Use a reference-only entry with a zero sample cap for a guide, review page,
+PDF, schema, or multi-file archive that should open externally. Reference-only
+entries must stay out of automatic and bulk source selection.
 
 Prefer datasets that expose normal splits or direct data files. Legacy
 script-only datasets should not be proposed for the default catalog unless the

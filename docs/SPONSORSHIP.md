@@ -10,7 +10,7 @@ review, and community support.
 
 * GitHub Sponsors: https://github.com/sponsors/ddkits
 * Buy Me a Coffee: https://buymeacoffee.com/ddkits
-* Reallexi sponsorship page: https://reallexi.com/sponsor
+* Reallexi sponsorship page: https://reallexi.io/sponsor
 
 The repository's `.github/FUNDING.yml` file is the canonical machine-readable
 list used by GitHub's Sponsor button. Do not trust funding destinations copied
