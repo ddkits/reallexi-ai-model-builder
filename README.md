@@ -1,6 +1,6 @@
 # Reallexi AI Model Builder Public Package
 
-[![Version](https://img.shields.io/badge/version-1.4.5-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-1.4.6-blue)](package.json)
 [![License](https://img.shields.io/badge/license-Apache--2.0-informational)](LICENSE)
 [![Guidelines site](https://img.shields.io/badge/guidelines-llm.reallexi.io-6d28d9)](https://llm.reallexi.io)
 
@@ -43,8 +43,8 @@ starting the complete runtime.
 
 Approved installers receive the runtime through controlled package systems:
 
-* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.4.5` and `ghcr.io/ddkits/ai-model-builder-frontend:1.4.5`
-* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.4.5`
+* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.4.6` and `ghcr.io/ddkits/ai-model-builder-frontend:1.4.6`
+* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.4.6`
 
 See [Core Access](docs/CORE_DISTRIBUTION_GITHUB.md) for authentication and
 troubleshooting.

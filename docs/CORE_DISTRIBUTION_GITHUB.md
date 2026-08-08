@@ -7,9 +7,9 @@ users install versioned runtime components from GitHub Packages and GHCR.
 
 ## Runtime Components
 
-* npm package: `@ddkits/ai-model-builder-core-private@1.4.5`
-* backend image: `ghcr.io/ddkits/ai-model-builder-backend:1.4.5`
-* frontend image: `ghcr.io/ddkits/ai-model-builder-frontend:1.4.5`
+* npm package: `@ddkits/ai-model-builder-core-private@1.4.6`
+* backend image: `ghcr.io/ddkits/ai-model-builder-backend:1.4.6`
+* frontend image: `ghcr.io/ddkits/ai-model-builder-frontend:1.4.6`
 
 These identifiers are install references. They do not include application
 source or internal release instructions.
