@@ -1,18 +1,18 @@
 {
   "npm": {
-    "package": "@ddkits/ai-model-builder-core-private@1.4.6",
+    "package": "@ddkits/ai-model-builder-core-private@1.4.7",
     "registry": "https://npm.pkg.github.com/",
     "access": "GitHub Packages read access required"
   },
   "githubPackages": {
-    "package": "@ddkits/ai-model-builder-core-private@1.4.6",
+    "package": "@ddkits/ai-model-builder-core-private@1.4.7",
     "registry": "https://npm.pkg.github.com/",
     "scope": "@ddkits",
     "access": "GitHub Actions can use GITHUB_TOKEN after ddkits/reallexi-ai-model-builder is granted package read access; local installs use a GitHub Packages read token from the user's GitHub account."
   },
   "ociImages": {
-    "backend": "ghcr.io/ddkits/ai-model-builder-backend:1.4.6",
-    "frontend": "ghcr.io/ddkits/ai-model-builder-frontend:1.4.6",
+    "backend": "ghcr.io/ddkits/ai-model-builder-backend:1.4.7",
+    "frontend": "ghcr.io/ddkits/ai-model-builder-frontend:1.4.7",
     "registry": "ghcr.io",
     "access": "container registry read token required unless published public"
   }
