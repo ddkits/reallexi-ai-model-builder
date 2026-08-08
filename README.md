@@ -1,5 +1,9 @@
 # Reallexi AI Model Builder Public Package
 
+[![Version](https://img.shields.io/badge/version-1.4.1-blue)](package.json)
+[![License](https://img.shields.io/badge/license-Apache--2.0-informational)](LICENSE)
+[![Guidelines site](https://img.shields.io/badge/guidelines-llm.reallexi.io-6d28d9)](https://llm.reallexi.io)
+
 Copyright (c) 2026 Reallexi LLC. All rights reserved.
 
 AI Model Builder is a Reallexi LLC project for preparing data, training and
@@ -10,6 +14,21 @@ extension proposal surface. The application source is not distributed here.
 * Guidelines: https://llm.reallexi.io
 * Public repository: https://github.com/ddkits/reallexi-ai-model-builder
 * Sponsor: https://github.com/sponsors/ddkits
+
+## Why Reallexi
+
+| Capability | Manual fine-tuning | Hosted platform | Reallexi |
+| --- | --- | --- | --- |
+| Large training targets | One long run or custom orchestration | Provider-specific workflow | Bounded, non-overlapping phases |
+| Interrupted work | Operator rebuild and checkpoint judgment | Depends on provider retention | Same-window checkpoint recovery |
+| Artifact identity | Naming and metadata by convention | Often tied to one platform | Explicit adapter, full-model, GGUF, and lineage proof |
+| Model custody and portability | Depends on each script | Uploaded to the service | Clear artifact lineage with user-controlled project files |
+| Cost model | Engineering time plus local compute | Usage-based compute and storage | Free local core; optional capability products |
+
+Every training run also captures a before/after sample report and a
+training-loss diagram automatically, so a finished model card shows concrete
+evidence of what the run changed, not just a loss number. See
+[Model artifacts and downloads](docs/MODEL_ARTIFACTS.md).
 
 ## Quick Start
 
@@ -24,8 +43,8 @@ starting the complete runtime.
 
 Approved installers receive the runtime through controlled package systems:
 
-* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.0.0` and `ghcr.io/ddkits/ai-model-builder-frontend:1.0.0`
-* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.0.0`
+* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.4.1` and `ghcr.io/ddkits/ai-model-builder-frontend:1.4.1`
+* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.4.1`
 
 See [Core Access](docs/CORE_DISTRIBUTION_GITHUB.md) for authentication and
 troubleshooting.

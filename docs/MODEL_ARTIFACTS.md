@@ -24,6 +24,18 @@ SLM/LLM jobs default to LoRA for resource safety. Turning the LoRA Adapter
 control off requests full-model fine-tuning and needs substantially more RAM or
 VRAM; runtime preflight can reject an unsafe configuration.
 
+## Before/After Samples And The Training Curve
+
+Every training run automatically captures a small, concrete look at what it
+changed: a few prompts drawn from the training data, generated once against
+the base model before training and once against the finished model, plus a
+loss-vs-step chart when loss was recorded. These are written into the
+artifact folder as `SAMPLES.md`, `samples.json`, and `training_curve.png`,
+and a short excerpt is embedded directly in the model card, so anyone reading
+a published model sees evidence of the run, not just a loss number. This is
+not a benchmark and does not replace reviewing held-out evaluation metrics
+and source provenance.
+
 ## Use The Trained Model Workspace
 
 1. Open a completed run under **Trained Models**.
