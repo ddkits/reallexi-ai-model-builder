@@ -23,27 +23,73 @@ runtime's existing Torch, Transformers, SafeTensors, and Hub dependencies.
 
 ## 1. Plan and expand
 
-1. Choose a Hugging Face model ID or a backend-accessible local model directory.
+The **Your models** picker loads automatically when you connect. It groups
+completed training jobs, existing merged SafeTensors exports, local model
+folders, downloaded Hugging Face checkpoints, and previous surgery outputs.
+Search by model name, job number, architecture, or folder. Selecting a model
+fills the source path for you.
+
+Adapter-only, unsupported, incomplete, missing, and numerically rejected models
+remain listed. Select one to see its preparation message. For a trained LoRA
+adapter, build a merged full SafeTensors export in **Trained Models**, then use
+**Refresh models** and choose that merged export. GGUF and media pipeline outputs
+are visible for context but are not full text checkpoints for this recipe.
+
+Discovery reads metadata only; it never loads or downloads model weights.
+Default locations include the application's artifact and export stores,
+extension-owned artifact folders, mounted `local-inputs/`, local `models/`, and
+the backend's Hugging Face cache. **Folders checked & discovery notes** shows
+what this runtime can see. To find another location, mount it into the backend
+and use **Scan another folder**, or enter its exact model path directly.
+Folder scans are bounded; choose a more specific parent if a large/deep folder
+reports incomplete discovery. Administrators can configure additional defaults
+with `REALLEXI_MODEL_SURGERY_MODEL_DIRS`, separated by the platform's path-list
+separator. Nothing is scanned across the entire drive or home directory.
+
+1. Select an existing model, or enter a Hugging Face ID or accessible local directory.
    For gated repositories, configure your account in the existing local Hub
    workspace. The planner resolves a Hub revision to a commit.
 2. Use a full, unquantized **Llama or Qwen2 text causal LM** checkpoint with
    SafeTensors weights and its tokenizer. Adapter-only, GGUF, sliding-window,
    multimodal, mixture-of-experts, and custom-code architectures are not recipes
    supported by this version. Merge adapters before surgery.
-3. Select the first layer (numbered from zero), block length, and additional
-   block copies. **Check architecture & resources** counts parameters without
-   allocating model weights. **Use the middle third** offers a convenient
+3. Select **Inspect model & preview growth** to count parameters without
+   allocating weights. Then choose a 25%/50% layer-growth preset or enter a
+   target size in billions and select **Calculate layer plan**. The helper
+   chooses a middle layer and calculates the extra copies. Advanced layer
+   choices are available under **Advanced: choose the layers yourself**.
+   The preview shows source layers + block length × extra copies = new depth.
+   **Use the middle third** offers a convenient
    starting block. It is a helper, not a proven optimal layer selection.
 4. Optionally enter a target size in billions. The helper chooses the nearest
    reachable larger size using copies of a single middle layer. The exact
    parameter count is shown before starting.
-5. Choose **Identity residuals** or **Copy original layer weights**. Identity
+5. Choose **Identity residuals** or **Copy existing weights**. Identity
    copies the selected layers, then zeros each new attention output and MLP
    output projection. The worker compares source/expanded probe logits before
    saving. Copy mode preserves the copied weights but can disrupt behavior.
 6. Create the expanded checkpoint. The worker saves it separately, reloads it,
    checks the layer count, parameter count, weights, and finite output, then
    publishes it in history with **needs healing** status.
+
+### What should I pick?
+
+Use **Identity residuals** as the starting initialization and use the size
+helper for your model's actual structure. For **Qwen2.5-1.5B**, whose source
+configuration has 28 layers and 1,543,714,304 parameters, a target of 2B is
+reachable with first layer 14, a block length of 1, and 10 additional copies.
+That gives 38 layers and 2,011,692,544 parameters. Other models need their own
+calculated plan.
+
+| Option | Meaning and starting choice |
+| --- | --- |
+| Model source | Select from Your models; its actual backend path fills automatically. Enter a Hub ID only for an online model not already listed. |
+| Hub revision | For online Hub sources, leave `main` unless you need a particular tag/commit. Inspection pins it. Local selections do not use this field. |
+| First layer | Copy position, starting at 0. It chooses where to copy from, not how much bigger the model becomes. The helper chooses a middle layer. |
+| Layers in the block | Number of consecutive source layers copied together. Start with 1 when using the target-size helper. |
+| Additional block copies | Extra repeats of that block. A block of 4 copied 2 additional times adds 8 layers. |
+| Identity residuals | Recommended initial behavior-preservation mode; the worker checks source probe output before saving. Training and evaluation are still needed. |
+| Copy existing weights | Reapply the original copied weights at their new positions. Outputs can change immediately; use for depth-stacking experiments followed by healing. |
 
 There is **no fixed model-size ceiling** or one-time expansion limit. Complete
 layers determine reachable sizes; embeddings and the output head do not grow.

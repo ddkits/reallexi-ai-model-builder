@@ -7,9 +7,12 @@ Core backlink: https://llm.reallexi.io
 Open **Extensions → Model Surgery** in the local workspace and connect using
 the existing Plugin Admin Unlock. This free community extension offers:
 
-1. **Plan & expand:** choose a full SafeTensors Llama or Qwen2 text model,
-   inspect its actual parameter count, and select layers to copy. Use identity
-   residual initialization to check initial probe preservation, or copy stacking.
+1. **Plan & expand:** select a trained model, merged export, local folder,
+   downloaded Hub checkpoint, or earlier surgery result from **Your models**.
+   Search the list or scan a mounted folder. Models needing preparation remain
+   visible with a reason. Choose a full SafeTensors Llama or Qwen2 text model,
+   inspect it, and choose a growth preset or calculate a target size. The page
+   explains each advanced option and recommends identity initialization.
 2. **Heal:** train inserted layers or all parameters on raw text, with separate
    held-out evaluation and a fresh RAM/device/disk preflight.
 3. **Review & use:** compare loss and prompt samples, then use the verified

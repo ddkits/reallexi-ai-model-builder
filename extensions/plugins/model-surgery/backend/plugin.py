@@ -22,9 +22,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 surgery = importlib.import_module("extensions.plugins.model-surgery.backend.surgery")
 healing = importlib.import_module("extensions.plugins.model-surgery.backend.healing")
+inventory = importlib.import_module("extensions.plugins.model-surgery.backend.inventory")
 
 DATA_ROOT = PROJECT_ROOT / "backend/data"
 STORE = DATA_ROOT / "model-surgery"
+
+
+def model_library(directory=None):
+    return inventory.discover(PROJECT_ROOT, DATA_ROOT, STORE, directory)
 
 
 def job_path(value):
@@ -197,7 +202,10 @@ def run_api_route(payload, context):
     if route == "catalog":
         STORE.mkdir(parents=True, exist_ok=True)
         return {"architectures": sorted(surgery.SUPPORTED), "resources": surgery.resources(STORE),
-                "jobs": jobs(), "help_url": "https://github.com/ddkits/reallexi-ai-model-builder/blob/main/docs/MODEL_SURGERY.md"}
+                "jobs": jobs(), "model_library": model_library(),
+                "help_url": "https://github.com/ddkits/reallexi-ai-model-builder/blob/main/docs/MODEL_SURGERY.md"}
+    if route in {"models-list", "models-scan"}:
+        return model_library(body.get("directory"))
     if route == "jobs-list":
         return {"jobs": jobs()}
     if route == "preflight":

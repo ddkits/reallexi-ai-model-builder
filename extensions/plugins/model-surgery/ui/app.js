@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 'use strict';
 const $ = (id) => document.getElementById(id);
-const state = { connected: false, jobs: [], plan: null, healPlan: null, busy: false };
+const state = { connected: false, jobs: [], plan: null, healPlan: null, busy: false, library: null, selectedModel: null };
 const pending = new Map();
 const count = (n) => Number(n).toLocaleString('en-US');
 const size = (n) => Number(n) >= 1e9 ? `${(Number(n) / 1e9).toFixed(3)}B` : Number(n) >= 1e6 ? `${(Number(n) / 1e6).toFixed(2)}M` : count(n);
@@ -59,12 +59,17 @@ function healing() {
 function active() { return state.jobs.find((job) => ['queued', 'running'].includes(job.status)); }
 function updateButtons() {
   $('expand').disabled = state.busy || Boolean(active()) || !state.plan?.plan.ready;
+  $('expand').disabled ||= Boolean(state.selectedModel && !state.selectedModel.eligible);
   $('heal').disabled = state.busy || Boolean(active()) || !state.healPlan?.plan.ready;
   $('connect').disabled = state.busy;
   for (const id of ['inspect','refresh']) $(id).disabled = state.busy || !state.connected;
+  $('inspect').disabled ||= Boolean(state.selectedModel && !state.selectedModel.eligible);
+  for (const id of ['refresh-models','scan-models','model-search','source-model']) $(id).disabled = state.busy || !state.connected;
   document.querySelector('#heal-form button[type=submit]').disabled = state.busy || !state.connected;
   document.querySelector('#probe-form button[type=submit]').disabled = state.busy || !state.connected || Boolean(active());
   for (const prefix of ['train','eval']) $(`${prefix}-upload`).disabled = state.busy || !state.connected;
+  $('revision').disabled = state.busy || Boolean(state.selectedModel);
+  document.querySelectorAll('[data-growth]').forEach((button) => { button.disabled = state.busy || !state.plan; });
 }
 function readiness(target, plan) {
   target.replaceChildren();
@@ -80,12 +85,29 @@ async function inspect() {
   for (const [value, label] of [[size(plan.original_parameters), 'Source parameters'], [size(plan.expanded_parameters), 'Expanded parameters'], [`${plan.source_layers} → ${plan.expanded_layers}`, 'Transformer layers']]) {
     const tile = element('div', undefined, 'metric'); tile.append(element('strong', value), element('span', label)); $('size-metrics').append(tile);
   }
-  $('layer-description').textContent = `Copy layers ${plan.first}–${plan.first + plan.count - 1} ${plan.copies} additional time(s), after the original block. Add ${count(plan.added_parameters)} independent parameters. Exact total: ${count(plan.expanded_parameters)}. Resolved revision: ${plan.revision}.`;
+  $('layer-description').textContent = `${plan.source_layers} source layers + (${plan.count} layer(s) per block × ${plan.copies} extra copies) = ${plan.expanded_layers} layers. Copy from position ${plan.first}–${plan.first + plan.count - 1}, after the original block. Add ${count(plan.added_parameters)} independent parameters. Exact total: ${count(plan.expanded_parameters)}.${state.selectedModel ? ' Using the selected local checkpoint.' : ` Resolved revision: ${plan.revision}.`}`;
   readiness($('plan-readiness'), plan);
 }
 $('plan-form').addEventListener('submit', (event) => { event.preventDefault(); action(inspect); });
-$('plan-form').addEventListener('input', () => { state.plan = null; $('plan-results').hidden = true; updateButtons(); });
+$('plan-form').addEventListener('input', (event) => {
+  if (['model-search','scan-directory'].includes(event.target.id)) return;
+  if (event.target.id === 'source') { state.selectedModel = null; $('source-model').value = ''; $('selected-model').hidden = true; }
+  state.plan = null; $('plan-results').hidden = true; updateButtons();
+});
 $('heal-form').addEventListener('input', () => { state.healPlan = null; $('heal-results').hidden = true; updateButtons(); });
+$('plan-form').addEventListener('invalid', (event) => { const details = event.target.closest('details'); if (details) details.open = true; }, true);
+$('initialization').addEventListener('change', () => {
+  $('initialization-help').textContent = $('initialization').value === 'identity'
+    ? 'Recommended: identity mode makes the added layers initially pass information through without changing the source probe output. The worker checks this. Train and evaluate afterward to make the added capacity useful.'
+    : 'Copy mode applies the copied layers at their new positions with the original weights. This can change outputs immediately. Use it for depth-stacking experiments, followed by healing and evaluation.';
+});
+document.querySelectorAll('[data-growth]').forEach((button) => button.addEventListener('click', () => action(async () => {
+  if (!state.plan) throw new Error('Inspect your model first.');
+  const depth = state.plan.plan.source_layers;
+  $('first').value = Math.floor(depth / 2); $('count').value = 1;
+  $('copies').value = Math.max(1, Math.ceil(depth * Number(button.dataset.growth)));
+  state.plan = null; await inspect();
+})));
 $('middle').addEventListener('click', () => action(async () => {
   if (!state.plan) throw new Error('Check the architecture first.');
   const depth = state.plan.plan.source_layers;
@@ -106,6 +128,7 @@ async function refresh() {
 }
 async function connect() {
   const result = await request('catalog'); state.connected = true; state.jobs = result.jobs;
+  state.library = result.model_library || { models: [], roots: [], warnings: [] }; renderModels();
   $('connection-state').textContent = `Connected locally · ${Number(result.resources.memory_available_gb).toFixed(1)} GiB RAM available · ${Number(result.resources.disk_free_gb).toFixed(1)} GiB disk free`;
   const selected = $('device').value; $('device').replaceChildren(new Option('CPU', 'cpu'));
   for (const accelerator of result.resources.accelerators || []) if (accelerator.usable && accelerator.torch_device?.startsWith('cuda:')) $('device').add(new Option(`${accelerator.name} (${accelerator.torch_device})`, accelerator.torch_device));
@@ -114,6 +137,55 @@ async function connect() {
 }
 $('connect').addEventListener('click', () => action(connect));
 $('refresh').addEventListener('click', () => action(refresh));
+function renderModels() {
+  const all = state.library?.models || [];
+  const query = $('model-search').value.trim().toLocaleLowerCase();
+  const filtered = all.filter((model) => `${model.label} ${model.path} ${model.architecture} ${model.reason}`.toLocaleLowerCase().includes(query));
+  const selected = state.selectedModel?.id;
+  $('source-model').replaceChildren(new Option(all.length ? 'Choose a model, or enter a path / Hub ID below' : 'No models found — scan a folder or enter a path below', ''));
+  const groups = { trained: 'Your trained models', merged: 'Merged full SafeTensors exports', local: 'Local model folders', cached: 'Downloaded Hugging Face checkpoints', surgery: 'Earlier surgery checkpoints' };
+  for (const [kind, label] of Object.entries(groups)) {
+    const entries = filtered.filter((model) => model.kind === kind);
+    if (!entries.length) continue;
+    const group = document.createElement('optgroup'); group.label = label;
+    for (const model of entries) group.append(new Option(`${model.label} · ${model.eligible ? model.architecture : 'needs preparation'}`, model.id));
+    $('source-model').append(group);
+  }
+  if (selected && filtered.some((model) => model.id === selected)) $('source-model').value = selected;
+  $('library-summary').textContent = `${all.length} model entries found · ${all.filter((model) => model.eligible).length} eligible for preflight${query ? ` · ${filtered.length} match your search` : ''}. Adapters and unsupported formats remain listed with preparation steps.`;
+  const roots = $('model-roots-content'); roots.replaceChildren();
+  for (const root of state.library?.roots || []) roots.append(element('p', `${root.label}: ${root.path}${root.available ? '' : ' (not present in this backend)'}`));
+  for (const warning of state.library?.warnings || []) roots.append(element('p', warning, 'discovery-warning'));
+  if (state.selectedModel) {
+    const updated = all.find((model) => model.id === state.selectedModel.id);
+    if (!updated) { state.selectedModel = null; state.plan = null; $('plan-results').hidden = true; $('selected-model').hidden = true; }
+    else {
+      if (updated.eligible !== state.selectedModel.eligible) { state.plan = null; $('plan-results').hidden = true; }
+      showSelectedModel(updated);
+    }
+  }
+}
+function showSelectedModel(model) {
+  state.selectedModel = model;
+  const detail = $('selected-model'); detail.hidden = false; detail.replaceChildren(element('strong', model.label), element('code', model.path), element('p', model.reason));
+  detail.className = `model-detail ${model.eligible ? 'model-eligible' : 'model-blocked'}`;
+}
+async function loadModels(scan = false) {
+  const directory = $('scan-directory').value.trim();
+  if (scan && !directory) throw new Error('Enter the backend model folder to scan.');
+  state.library = await request('models', directory ? 'POST' : 'GET', directory ? {directory} : null);
+  renderModels();
+}
+$('refresh-models').addEventListener('click', () => action(() => loadModels()));
+$('scan-models').addEventListener('click', () => action(() => loadModels(true)));
+$('model-search').addEventListener('input', renderModels);
+$('source-model').addEventListener('change', () => {
+  const model = state.library?.models.find((entry) => entry.id === $('source-model').value);
+  state.plan = null; $('plan-results').hidden = true;
+  if (model) { showSelectedModel(model); $('source').value = model.path; $('revision').value = 'main'; $('first').value = 0; $('count').value = 1; $('copies').value = 1; }
+  else { state.selectedModel = null; $('selected-model').hidden = true; }
+  updateButtons();
+});
 function updateParents() {
   const checkpoints = state.jobs.filter((job) => job.status === 'completed' && job.operation !== 'probe');
   for (const id of ['heal-parent','probe-parent']) {

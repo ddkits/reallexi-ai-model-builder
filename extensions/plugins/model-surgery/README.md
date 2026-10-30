@@ -5,6 +5,10 @@ Copyright (c) 2026 Reallexi LLC. All rights reserved.
 Apache-2.0. Core backlink: https://llm.reallexi.io
 
 Open **Extensions → Model Surgery**. The guided page supports architecture
+planning with a searchable **Your models** picker for trained artifacts, merged
+exports, local folders, cached Hub checkpoints, and earlier surgery outputs.
+Ineligible formats remain visible with preparation steps. Discovery reads
+metadata only and supports explicit mounted-folder scans. The page also supports
 inspection, whole-layer expansion without a fixed size ceiling, raw-text
 continual pre-training, held-out loss comparisons, prompt samples, cancellation,
 and verified checkpoint history. Supported recipes are standard unquantized

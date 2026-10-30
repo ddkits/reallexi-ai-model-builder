@@ -1,7 +1,7 @@
 {
   "id": "model-surgery",
   "name": "Model Surgery",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "owner": "Reallexi LLC",
   "license": "Apache-2.0",
   "copyright": "Copyright (c) 2026 Reallexi LLC. All rights reserved.",
@@ -17,6 +17,8 @@
     {"id": "model-surgery.app", "path": "ui/app.js", "kind": "script"}
   ],
   "api_routes": [
+    {"id": "model-surgery.models-list", "method": "GET", "path": "/extensions/runtime/model-surgery/models", "target": "reviewed-code", "auth": "admin-token", "handler": "model-surgery.backend:run_api_route"},
+    {"id": "model-surgery.models-scan", "method": "POST", "path": "/extensions/runtime/model-surgery/models", "target": "reviewed-code", "auth": "admin-token", "handler": "model-surgery.backend:run_api_route"},
     {"id": "model-surgery.catalog", "method": "GET", "path": "/extensions/runtime/model-surgery/catalog", "target": "reviewed-code", "auth": "admin-token", "handler": "model-surgery.backend:run_api_route"},
     {"id": "model-surgery.jobs-list", "method": "GET", "path": "/extensions/runtime/model-surgery/jobs", "target": "reviewed-code", "auth": "admin-token", "handler": "model-surgery.backend:run_api_route"},
     {"id": "model-surgery.preflight", "method": "POST", "path": "/extensions/runtime/model-surgery/preflight", "target": "reviewed-code", "auth": "admin-token", "handler": "model-surgery.backend:run_api_route"},
@@ -25,6 +27,7 @@
     {"id": "model-surgery.cancel", "method": "POST", "path": "/extensions/runtime/model-surgery/cancel", "target": "reviewed-code", "auth": "admin-token", "handler": "model-surgery.backend:run_api_route"}
   ],
   "code_modules": [
+    {"id": "model-surgery.inventory", "runtime": "backend", "mode": "reviewed-code", "path": "backend/inventory.py", "hook": "api.route.register", "description": "Read-only trained-artifact, merged-export, local-folder, surgery-output, and Hub cache discovery."},
     {"id": "model-surgery.backend", "runtime": "backend", "mode": "reviewed-code", "path": "backend/plugin.py", "hook": "api.route.register", "handler": "run_api_route"},
     {"id": "model-surgery.engine", "runtime": "backend", "mode": "reviewed-code", "path": "backend/surgery.py", "hook": "job.lifecycle"},
     {"id": "model-surgery.healing", "runtime": "backend", "mode": "reviewed-code", "path": "backend/healing.py", "hook": "job.lifecycle"},
