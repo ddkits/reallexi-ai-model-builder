@@ -42,12 +42,13 @@
       <div class="actions"><button type="submit" id="inspect">Inspect model & preview growth</button></div>
     </form>
     <div id="plan-results" hidden>
+      <div id="expansion-action" class="expansion-action"><div><h3>Next: create your larger checkpoint</h3><p>Review the size below, then start expansion. This saves a new model; healing is the following step.</p></div><button id="expand" type="button" disabled>Start expansion</button></div>
+      <div id="plan-readiness"></div>
       <div class="metrics" id="size-metrics"></div>
       <p id="layer-description" class="callout"></p>
       <div class="growth-presets actions"><button type="button" class="secondary" data-growth="0.25">Add about 25% more layers</button><button type="button" class="secondary" data-growth="0.5">Add about 50% more layers</button></div>
       <div class="target"><label>Target size in billions of parameters<input id="target-size" type="number" min="0" step="any" placeholder="Enter 2 for about 2B"><small>Enter a size larger than the source. Whole layers may land slightly above your target. This calculates a plan; it does not start surgery.</small></label><button id="target" type="button" class="secondary">Calculate layer plan</button></div>
       <p class="hint">There is no fixed model-size ceiling. Growth happens in whole layers; RAM, disk, architecture, and later training memory determine what this machine can run.</p>
-      <div id="plan-readiness"></div><button id="expand" type="button" disabled>Create expanded checkpoint</button>
     </div>
   </section>
   <section id="panel-heal" class="panel" hidden>
@@ -76,6 +77,7 @@
   </section>
   <section id="panel-history" class="panel" hidden><div class="section-heading"><h2>Runs & checkpoint evidence</h2><button id="refresh" class="secondary">Refresh</button></div><p>Every action has a separate run. Cancelling or failing a run preserves its parent checkpoints. Partial output is never offered as a verified model.</p><div id="jobs" aria-live="polite"><p>No runs loaded. Connect the workspace to see history.</p></div></section>
   <aside id="active-job" class="active-job" aria-live="polite" hidden></aside>
+  <aside id="next-action" class="next-action" aria-label="Next step"><div><strong id="next-title">Connect to begin</strong><p id="next-detail">Connect to your local workspace to start.</p></div><button id="next-button" type="button">Connect to start</button></aside>
   <footer>© 2026 Reallexi LLC · Apache-2.0 community extension · <a href="https://llm.reallexi.io" target="_blank" rel="noreferrer">AI Model Builder</a></footer>
 </main><script src="./app.js" defer></script>
 </body></html>

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 'use strict';
 const $ = (id) => document.getElementById(id);
-const state = { connected: false, jobs: [], plan: null, healPlan: null, busy: false, library: null, selectedModel: null };
+const state = { connected: false, jobs: [], plan: null, healPlan: null, busy: false, library: null, selectedModel: null, step: 'plan' };
 const pending = new Map();
 const count = (n) => Number(n).toLocaleString('en-US');
 const size = (n) => Number(n) >= 1e9 ? `${(Number(n) / 1e9).toFixed(3)}B` : Number(n) >= 1e6 ? `${(Number(n) / 1e6).toFixed(2)}M` : count(n);
@@ -39,11 +39,13 @@ async function action(work) {
   finally { state.busy = false; updateButtons(); }
 }
 function view(step) {
+  state.step = step;
   document.querySelectorAll('nav button').forEach((button) => {
     button.classList.toggle('selected', button.dataset.step === step);
     if (button.dataset.step === step) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
   });
   document.querySelectorAll('.panel').forEach((panel) => { panel.hidden = panel.id !== `panel-${step}`; });
+  updateButtons();
 }
 document.querySelectorAll('[data-step]').forEach((button) => button.addEventListener('click', () => view(button.dataset.step)));
 function expansion() {
@@ -70,6 +72,50 @@ function updateButtons() {
   for (const prefix of ['train','eval']) $(`${prefix}-upload`).disabled = state.busy || !state.connected;
   $('revision').disabled = state.busy || Boolean(state.selectedModel);
   document.querySelectorAll('[data-growth]').forEach((button) => { button.disabled = state.busy || !state.plan; });
+  nextAction();
+}
+function nextAction() {
+  $('next-action').hidden = Boolean(active());
+  let title = 'Connect to begin', detail = 'Unlock Plugin Admin above, then connect to your local workspace.', label = 'Connect to start';
+  let run = () => $('connect').click(), disabled = state.busy;
+  const choose = () => { view('plan'); $('source-model').scrollIntoView({block:'center'}); ($('source-model').options.length > 1 ? $('source-model') : $('source')).focus(); };
+  const checkpoint = state.jobs.find((job) => job.status === 'completed' && job.operation !== 'probe');
+  if (state.connected) {
+    if (state.step === 'plan') {
+      if (state.selectedModel && !state.selectedModel.eligible) {
+        title = 'This model needs preparation'; detail = state.selectedModel.reason; label = 'Choose another model'; run = choose;
+      } else if (!$('source').value.trim()) {
+        title = 'Choose the model to grow'; detail = 'Select your existing model or enter a backend folder / Hugging Face ID.'; label = 'Choose a model'; run = choose;
+      } else if (!state.plan) {
+        title = 'Next: preview the larger model'; detail = 'Inspect to calculate the exact new size and check available resources.'; label = 'Inspect & continue'; run = () => $('plan-form').requestSubmit();
+      } else {
+        const plan = state.plan.plan;
+        title = plan.ready ? 'Ready to create the larger checkpoint' : 'Expansion is blocked';
+        detail = plan.ready ? `${size(plan.original_parameters)} → ${size(plan.expanded_parameters)} parameters. Creates a separate checkpoint; healing comes next.` : plan.blockers.join(' ');
+        label = 'Start expansion'; disabled ||= $('expand').disabled; run = () => $('expand').click();
+      }
+    } else if (state.step === 'heal' && checkpoint) {
+      title = state.healPlan ? 'Next: start continual pre-training' : 'Next: prepare healing';
+      detail = state.healPlan ? (state.healPlan.plan.ready ? 'Resources checked. Training creates another checkpoint.' : state.healPlan.plan.blockers.join(' ')) : 'Select a checkpoint, training text, separate evaluation text, and confirm data rights.';
+      label = state.healPlan ? 'Start healing' : 'Check healing & continue';
+      disabled ||= Boolean(state.healPlan && $('heal').disabled);
+      run = () => state.healPlan ? $('heal').click() : $('heal-form').requestSubmit();
+    } else if (state.step === 'review' && checkpoint) {
+      title = 'Next: test the checkpoint'; detail = 'Select a verified checkpoint and enter a representative prompt.'; label = 'Run prompt test'; run = () => $('probe-form').requestSubmit();
+    } else if (state.step === 'history' && checkpoint) {
+      const healed = checkpoint.operation === 'heal';
+      title = healed ? 'Next: evaluate the healed model' : 'Expansion complete. Next: healing';
+      detail = 'Your verified checkpoint is saved. Continue with it in the next step.';
+      label = healed ? 'Continue to prompt test' : 'Continue to healing';
+      run = () => { $(healed ? 'probe-parent' : 'heal-parent').value = checkpoint.id; view(healed ? 'review' : 'heal'); };
+    } else {
+      title = 'Create an expanded checkpoint first'; detail = 'Start with a supported model in Plan & expand.'; label = 'Go to model plan'; run = () => view('plan');
+    }
+  }
+  if (state.busy) detail = 'Working… Please wait for the current check to finish.';
+  else if (!$('error').hidden) detail = $('error').textContent;
+  $('next-title').textContent = title; $('next-detail').textContent = detail;
+  $('next-button').textContent = label; $('next-button').disabled = disabled; $('next-button').onclick = run;
 }
 function readiness(target, plan) {
   target.replaceChildren();
@@ -87,6 +133,7 @@ async function inspect() {
   }
   $('layer-description').textContent = `${plan.source_layers} source layers + (${plan.count} layer(s) per block × ${plan.copies} extra copies) = ${plan.expanded_layers} layers. Copy from position ${plan.first}–${plan.first + plan.count - 1}, after the original block. Add ${count(plan.added_parameters)} independent parameters. Exact total: ${count(plan.expanded_parameters)}.${state.selectedModel ? ' Using the selected local checkpoint.' : ` Resolved revision: ${plan.revision}.`}`;
   readiness($('plan-readiness'), plan);
+  $('expansion-action').scrollIntoView({block:'center', behavior:'smooth'});
 }
 $('plan-form').addEventListener('submit', (event) => { event.preventDefault(); action(inspect); });
 $('plan-form').addEventListener('input', (event) => {
@@ -211,7 +258,7 @@ function renderJobs() {
         for (const [label, destination] of [['Heal this checkpoint','heal'], ['Test a prompt','review']]) {
           const button = element('button', label, 'secondary'); button.addEventListener('click', () => { $(destination === 'heal' ? 'heal-parent' : 'probe-parent').value = job.id; state.healPlan = null; $('heal-results').hidden = true; updateButtons(); view(destination); }); actions.append(button);
         }
-        const more = element('button', 'Expand again', 'secondary'); more.addEventListener('click', () => { $('source').value = job.model_path; state.plan = null; $('plan-results').hidden = true; updateButtons(); view('plan'); }); actions.append(more); card.append(actions);
+        const more = element('button', 'Expand again', 'secondary'); more.addEventListener('click', () => { $('source').value = job.model_path; state.selectedModel = null; $('source-model').value = ''; $('selected-model').hidden = true; state.plan = null; $('plan-results').hidden = true; updateButtons(); view('plan'); }); actions.append(more); card.append(actions);
       }
     }
     $('jobs').append(card);
@@ -233,6 +280,7 @@ $('heal-form').addEventListener('submit', (event) => { event.preventDefault(); a
   if (JSON.stringify(input) !== JSON.stringify(healing())) throw new Error('The healing recipe changed. Check the current settings again.');
   state.healPlan = reviewed; $('heal-results').hidden = false;
   readiness($('heal-readiness'), state.healPlan.plan);
+  $('heal-results').scrollIntoView({block:'center', behavior:'smooth'});
 }); });
 $('heal').addEventListener('click', () => action(async () => {
   if (!state.healPlan?.plan.ready) throw new Error('Check healing resources first.');

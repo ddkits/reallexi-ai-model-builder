@@ -68,9 +68,17 @@ separator. Nothing is scanned across the entire drive or home directory.
    copies the selected layers, then zeros each new attention output and MLP
    output projection. The worker compares source/expanded probe logits before
    saving. Copy mode preserves the copied weights but can disrupt behavior.
-6. Create the expanded checkpoint. The worker saves it separately, reloads it,
+6. When the resource check is ready, select **Start expansion** in the
+   persistent next-step bar or above the resource message. The bar stays visible
+   while scrolling and explains blocked actions. A resource estimate alone does
+   not start a run. If another core training job is running, finish or pause it
+   first; the start error also appears beside the button.
+   The worker saves the expanded checkpoint separately, reloads it,
    checks the layer count, parameter count, weights, and finite output, then
    publishes it in history with **needs healing** status.
+   Follow **Continue to healing** when it completes. On the Heal tab, provide
+   training and separate evaluation text, check resources, then select
+   **Start healing**. The next-step bar also offers the prompt test afterward.
 
 ### What should I pick?
 

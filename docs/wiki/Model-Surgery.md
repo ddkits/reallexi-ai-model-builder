@@ -13,6 +13,10 @@ the existing Plugin Admin Unlock. This free community extension offers:
    visible with a reason. Choose a full SafeTensors Llama or Qwen2 text model,
    inspect it, and choose a growth preset or calculate a target size. The page
    explains each advanced option and recommends identity initialization.
+   After the resource check, select **Start expansion** in the persistent
+   next-step bar or above the resource message. The estimate does not start a
+   run automatically. Blocked actions and start errors explain what to fix
+   beside that button. On completion, select **Continue to healing**.
 2. **Heal:** train inserted layers or all parameters on raw text, with separate
    held-out evaluation and a fresh RAM/device/disk preflight.
 3. **Review & use:** compare loss and prompt samples, then use the verified
