@@ -5,6 +5,13 @@ Copyright (c) 2026 Reallexi LLC. All rights reserved.
 This public contract describes safe extension categories without exposing
 private implementation functions or internal admin flows.
 
+The community Model Surgery manifest declares its page, assets, local Admin
+bridge permission, reviewed code modules, and isolated worker. Its own routes
+provide planning, jobs, text upload, and cancellation. It installs no core
+training hooks and requires no paid capability. The exact allowlisted source
+ships publicly; private implementations retain their existing assignments.
+See the [guide](MODEL_SURGERY.md) and [wiki](wiki/Model-Surgery.md).
+
 ## Public Hook Categories
 
 | Category | Purpose |

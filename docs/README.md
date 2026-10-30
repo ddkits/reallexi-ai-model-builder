@@ -28,6 +28,7 @@ release operations are intentionally excluded.
 * [Model artifacts and downloads](MODEL_ARTIFACTS.md)
 * [Hugging Face account workspace](HUGGINGFACE_WORKSPACE.md)
 * [Phased and incremental training](PHASED_TRAINING.md)
+* [Model Surgery](MODEL_SURGERY.md) and [wiki](wiki/Model-Surgery.md)
 * [GPU acceleration and device selection](GPU_ACCELERATION.md)
 * [Release profiles](RELEASE_PROFILES.md)
 * [Personal, commercial, EU, and USA policy](PERSONAL_COMMERCIAL_POLICY.md)

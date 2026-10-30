@@ -46,6 +46,7 @@ const required = [
 
 const allowedFiles = new Set([
   ...required,
+  ...["extensions/plugins/model-surgery/plugin.json","extensions/plugins/model-surgery/README.md","extensions/plugins/model-surgery/backend/plugin.py","extensions/plugins/model-surgery/backend/surgery.py","extensions/plugins/model-surgery/backend/healing.py","extensions/plugins/model-surgery/backend/worker.py","extensions/plugins/model-surgery/ui/index.html","extensions/plugins/model-surgery/ui/styles.css","extensions/plugins/model-surgery/ui/app.js","docs/MODEL_SURGERY.md","docs/wiki/Home.md","docs/wiki/Model-Surgery.md","docs/wiki/_Sidebar.md"],
   '.env.example',
   '.gitignore',
   '.npmrc.example',
@@ -100,9 +101,10 @@ if (unexpectedFiles.length > 0) {
 }
 
 const forbiddenSourceExtensions = new Set(['.py', '.pyc', '.jsx', '.tsx', '.map']);
+const communitySourceExceptions = new Set(["extensions/plugins/model-surgery/plugin.json","extensions/plugins/model-surgery/README.md","extensions/plugins/model-surgery/backend/plugin.py","extensions/plugins/model-surgery/backend/surgery.py","extensions/plugins/model-surgery/backend/healing.py","extensions/plugins/model-surgery/backend/worker.py","extensions/plugins/model-surgery/ui/index.html","extensions/plugins/model-surgery/ui/styles.css","extensions/plugins/model-surgery/ui/app.js"]);
 const sourceLeaks = allFiles
   .map(relative)
-  .filter((file) => forbiddenSourceExtensions.has(path.extname(file).toLowerCase()));
+  .filter((file) => forbiddenSourceExtensions.has(path.extname(file).toLowerCase()) && !communitySourceExceptions.has(file));
 if (sourceLeaks.length > 0) {
   console.error('[public] Source or source-map files are not allowed: ' + sourceLeaks.join(', '));
   process.exit(1);

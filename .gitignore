@@ -1,5 +1,6 @@
 node_modules/
 .env
 data/
+local-inputs/
 dist/
 npm-debug.log*

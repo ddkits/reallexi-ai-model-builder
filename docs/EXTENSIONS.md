@@ -6,6 +6,11 @@ AI Model Builder supports a reviewed plugin and theme model. Public extensions
 should be manifest-first and should integrate through documented extension
 points rather than patching core files.
 
+The Apache-2.0 Model Surgery extension is shipped as explicitly allowlisted
+community source. Open its guided page in Extensions for size planning,
+expansion, healing, and evaluation. See [Model Surgery](MODEL_SURGERY.md) and
+the [wiki](wiki/Model-Surgery.md). Private sibling plugin code remains excluded.
+
 ## Allowed Public Extension Types
 
 * plugin manifests;

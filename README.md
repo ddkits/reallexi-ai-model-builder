@@ -1,6 +1,6 @@
 # Reallexi AI Model Builder Public Package
 
-[![Version](https://img.shields.io/badge/version-1.4.15-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-1.4.18-blue)](package.json)
 [![License](https://img.shields.io/badge/license-Apache--2.0-informational)](LICENSE)
 [![Guidelines site](https://img.shields.io/badge/guidelines-llm.reallexi.io-6d28d9)](https://llm.reallexi.io)
 
@@ -43,8 +43,8 @@ starting the complete runtime.
 
 Approved installers receive the runtime through controlled package systems:
 
-* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.4.15` and `ghcr.io/ddkits/ai-model-builder-frontend:1.4.15`
-* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.4.15`
+* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.4.18` and `ghcr.io/ddkits/ai-model-builder-frontend:1.4.18`
+* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.4.18`
 
 See [Core Access](docs/CORE_DISTRIBUTION_GITHUB.md) for authentication and
 troubleshooting.
@@ -110,6 +110,7 @@ release authority. See [Sponsorship](docs/SPONSORSHIP.md) for the public policy.
 * [Model artifacts and downloads](docs/MODEL_ARTIFACTS.md)
 * [Hugging Face account workspace](docs/HUGGINGFACE_WORKSPACE.md)
 * [Phased and incremental training](docs/PHASED_TRAINING.md)
+* [Model Surgery](docs/MODEL_SURGERY.md) and [wiki](docs/wiki/Model-Surgery.md)
 * [Personal and commercial policy](docs/PERSONAL_COMMERCIAL_POLICY.md)
 * [Sponsorship](docs/SPONSORSHIP.md)
 

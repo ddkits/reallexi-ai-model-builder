@@ -1,85 +1,25 @@
-<!-- SPDX-FileCopyrightText: 2026 Reallexi LLC -->
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
-# GPU acceleration and device selection
+# GPU acceleration
 
 Copyright (c) 2026 Reallexi LLC. All rights reserved.
 
-Core project: https://llm.reallexi.io
+Core backlink: https://llm.reallexi.io
 
-AI Model Builder separates **GPUs detected by the host OS** from GPUs that are
-**usable by the backend runtime**. A display adapter appearing in Windows Device
-Manager does not mean a Linux Docker container or its installed PyTorch wheel can
-use that adapter.
+The launcher inventories host graphics devices and distinguishes host hardware
+from accelerators actually available to the training runtime. A detected GPU
+does not by itself establish that a container can use it.
 
-## Automatic launcher behavior
+NVIDIA training needs a compatible CUDA runtime and container device access.
+AMD training needs a supported ROCm environment. Apple MPS depends on native
+runtime support. CPU remains an available local option. Use the workspace's
+resource report to check the selected device and available memory before a run.
 
-`npm run project` inventories graphics devices and chooses a compatible Compose
-override:
+Model Surgery performs expansion on CPU and checks RAM and disk first. Its
+healing page lists CPU and runtime-visible CUDA/ROCm devices and estimates
+float32 model, gradient, optimizer, and activation memory before training.
+It has no fixed model-size ceiling; resource fit and the supported architecture
+determine feasibility. See [Model Surgery](MODEL_SURGERY.md).
 
-| Host/runtime | Selection | PyTorch device |
-| --- | --- | --- |
-| Windows or Linux with NVIDIA Container Toolkit | NVIDIA CUDA image | `cuda:N` |
-| Native Linux with `/dev/kfd`, `/dev/dri`, and ROCm | AMD ROCm image | `cuda:N` |
-| Native macOS Python process with MPS (outside Docker) | Apple Metal | `mps` |
-| No usable accelerator | CPU image | `cpu` |
-
-PyTorch deliberately uses the `torch.cuda` API and `cuda:N` device spelling for
-both NVIDIA CUDA and AMD ROCm. The backend uses `torch.version.hip` to label ROCm
-correctly instead of assuming every `cuda:N` device is NVIDIA.
-
-When both AMD and NVIDIA adapters exist on Windows, the Docker launcher selects
-NVIDIA if the NVIDIA container runtime works. Windows AMD adapters remain visible
-in diagnostics as `Host only`: Docker Desktop's Linux CUDA container cannot use
-them. An RX 7900 XT can use the ROCm profile on a supported native Linux host,
-but it cannot share one PyTorch process with the CUDA wheel.
-
-## Choosing a GPU
-
-The training form lists each runtime device separately. `Auto` selects the usable
-accelerator with the most visible VRAM. Selecting a device stores its stable
-runtime id, such as `cuda:0` or `rocm:0`, in the recipe. `CPU Only` is always an
-explicit option. A requested device that is unavailable is recorded in the job
-log and safely falls back to CPU; it is never reported as active GPU training.
-
-Every job persists:
-
-* requested device id;
-* resolved PyTorch device and index;
-* accelerator vendor, name, backend, and visible VRAM;
-* effective RAM/VRAM limits and any fallback warning.
-
-This evidence is available in the job's `runtimeResourcePlan` and preserved logs.
-
-## Overrides and troubleshooting
-
-Set `REALLEXI_ACCELERATOR_BACKEND` to `auto` (default), `nvidia`, `amd`, or `cpu`
-before `npm run project`. An unavailable forced backend safely resolves to CPU.
-
-For NVIDIA, verify `nvidia-smi` works on the host and inside a test container.
-On Docker Desktop/WSL2, use the NVIDIA overlay so the backend installs the CUDA
-wheel before the container starts:
-
-```sh
-docker compose -f docker-compose.nvidia.yml build --no-cache backend
-docker compose -f docker-compose.nvidia.yml up
-```
-
-The index and version can be overridden without editing YAML. In PowerShell,
-for example: `$env:TORCH_INDEX_URL="https://download.pytorch.org/whl/cu128"`.
-
-The NVIDIA file sets `TORCH_INDEX_URL` to the CUDA 12.8 wheel repository and
-`TORCH_VERSION=2.11.0` (the RTX 5090 driver supports it) and
-`REALLEXI_ACCELERATOR_BACKEND=cuda`. The Dockerfile intentionally removes Torch
-from the general requirements pass and installs it afterward; otherwise the
-requirements pass resolves the CPU/default-index wheel before the CUDA index can
-take effect. If Docker reports `permission denied` on its engine pipe, start
-Docker Desktop and ensure WSL2 GPU integration is enabled; that is a host runtime
-permission issue, not a pip index issue.
-For AMD ROCm, use native Linux with a supported amdgpu driver and verify
-`/dev/kfd` and `/dev/dri` exist. Do not install a CUDA and ROCm PyTorch wheel into
-the same backend image. In Windows Task Manager, inspect the CUDA/Compute engine;
-the default 3D graph can stay low during active CUDA training.
-
-The `/system/resources` endpoint returns `host_os`, `runtime_os`, `accelerators`,
-`selected_accelerator`, and backward-compatible CUDA summary fields for clients.
+Keep application ports in the documented 54376–64322 range. Follow the public
+launcher instructions for your release and the hardware vendor's official
+compatibility guidance. Do not assume that inference memory equals training
+memory, or that a host device report proves accelerator access inside Docker.

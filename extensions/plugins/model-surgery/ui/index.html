@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Model Surgery · Reallexi</title><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main>
+  <header><div><span class="eyebrow">Community workspace</span><h1>Grow a model, step by step.</h1>
+    <p>Plan the layers, create a separate checkpoint, then train and evaluate the expansion.</p></div>
+    <a href="https://github.com/ddkits/reallexi-ai-model-builder/blob/main/docs/MODEL_SURGERY.md" target="_blank" rel="noreferrer">Read the guide ↗</a></header>
+  <div class="connection"><span id="connection-state">Unlock this page with the Plugin Admin Unlock above, then connect.</span><button id="connect" type="button">Connect workspace</button></div>
+  <div id="error" role="alert" hidden></div>
+  <nav aria-label="Surgery steps">
+    <button data-step="plan" class="selected" aria-current="step">1 <span>Plan & expand</span></button>
+    <button data-step="heal">2 <span>Heal</span></button>
+    <button data-step="review">3 <span>Review & use</span></button>
+    <button data-step="history">4 <span>Run history</span></button>
+  </nav>
+  <section id="panel-plan" class="panel">
+    <div class="section-heading"><h2>Start with a supported full model</h2><span class="badge">Llama · Qwen2</span></div>
+    <p>Use an unquantized SafeTensors checkpoint with its tokenizer. Merge LoRA adapters into a full model first. Expansion adds capacity; it does not guarantee better quality.</p>
+    <form id="plan-form">
+      <div class="grid two"><label>Model directory or Hugging Face ID<input id="source" name="source" required placeholder="Qwen/Qwen2.5-1.5B or a mounted local directory"><small>Local folders must be accessible to the backend. Mount large inputs under local-inputs.</small></label>
+      <label>Hub revision<input id="revision" value="main" placeholder="main, tag, or commit"><small>The plan resolves a Hub revision to a commit before starting.</small></label></div>
+      <div class="grid three"><label>First layer (starts at 0)<input id="first" type="number" min="0" step="1" value="0" required></label><label>Layers in the block<input id="count" type="number" min="1" step="1" value="1" required></label><label>Additional block copies<input id="copies" type="number" min="1" step="1" value="1" required></label></div>
+      <label>Initialization<select id="initialization"><option value="identity">Identity residuals · recommended starting point</option><option value="copy">Copy original layer weights · depth stacking</option></select><small>Identity mode copies the block, then zeros the new residual output projections. A probe checks that source logits are preserved. Copy mode can change behavior immediately.</small></label>
+      <div class="actions"><button type="submit" id="inspect">Check architecture & resources</button><button type="button" id="middle" class="secondary" disabled>Use the middle third</button></div>
+    </form>
+    <div id="plan-results" hidden>
+      <div class="metrics" id="size-metrics"></div>
+      <p id="layer-description" class="callout"></p>
+      <div class="target"><label>Optional target size (billions)<input id="target-size" type="number" min="0" step="any" placeholder="For example, 2"></label><button id="target" type="button" class="secondary">Suggest nearest larger size</button></div>
+      <p class="hint">There is no fixed model-size ceiling. Growth happens in whole layers; RAM, disk, architecture, and later training memory determine what this machine can run.</p>
+      <div id="plan-readiness"></div><button id="expand" type="button" disabled>Create expanded checkpoint</button>
+    </div>
+  </section>
+  <section id="panel-heal" class="panel" hidden>
+    <h2>Train the expanded checkpoint</h2><p>Continual pre-training uses raw text and next-token prediction. Choose a broad corpus for general ability, or a domain corpus with representative general text. Set the budget from pilot evaluations; no universal token count guarantees recovery.</p>
+    <form id="heal-form">
+      <label>Verified parent checkpoint<select id="heal-parent" required><option value="">Create an expanded checkpoint first</option></select></label>
+      <div class="grid two">
+        <label>Training text path<input id="train-file" required placeholder="Backend path to training.txt"><small>UTF-8 .txt or .md. For small files, upload below.</small><input id="train-upload" type="file" accept=".txt,.md" aria-label="Upload training text"></label>
+        <label>Held-out evaluation text path<input id="eval-file" required placeholder="Backend path to held-out.txt"><small>Keep this text out of training. Use the same set across comparisons.</small><input id="eval-upload" type="file" accept=".txt,.md" aria-label="Upload evaluation text"></label>
+      </div>
+      <div class="grid two"><label>Trainable weights<select id="train-scope"><option value="inserted">Inserted layers only</option><option value="full">All model parameters</option></select><small>Inserted-only training freezes original weights. It can still change outputs. This is full-weight training of the selected layers, not LoRA.</small></label><label>Training device<select id="device"><option value="cpu">CPU</option></select><small>Only devices visible to the backend are listed. Memory is checked again when the worker starts.</small></label></div>
+      <div class="grid three"><label>Optimizer steps<input id="steps" type="number" min="1" step="1" value="100" required></label><label>Sequence length<input id="sequence-length" type="number" min="2" step="1" value="256" required></label><label>Learning rate<input id="learning-rate" type="number" min="0" step="any" value="0.00001" required></label></div>
+      <div class="grid two"><label>Gradient accumulation<input id="accumulation" type="number" min="1" step="1" value="1" required><small>Microbatch size is one. Accumulation increases the effective batch.</small></label><label>Evaluation blocks<input id="eval-blocks" type="number" min="1" step="1" value="8" required><small>Evaluation reads this many blocks from the start of your held-out file.</small></label></div>
+      <label class="check"><input id="rights" type="checkbox" required> I have permission to train on this text and have kept evaluation data separate.</label>
+      <p class="hint">Training streams the file and cycles through it when needed. The history reports token exposures and repeated passes. Start with a small pilot; these default settings are not a model-quality recommendation.</p>
+      <button type="submit">Check healing resources</button>
+    </form>
+    <div id="heal-results" hidden><div id="heal-readiness"></div><button id="heal" disabled>Start healing into a new checkpoint</button></div>
+  </section>
+  <section id="panel-review" class="panel" hidden>
+    <h2>Inspect behavior before using the model</h2><p>A successful reload proves the files work. Held-out loss and prompt samples help assess behavior; they do not certify broad quality or retained capabilities. Compare against the original base on representative tasks before deployment.</p>
+    <form id="probe-form"><label>Verified checkpoint<select id="probe-parent" required><option value="">No checkpoint yet</option></select></label><label>Test prompt<textarea id="prompt" rows="4" required placeholder="Use the same prompt you tested on the original model."></textarea></label>
+      <label>Maximum new tokens<input id="new-tokens" type="number" min="1" step="1" value="64" required></label><button type="submit">Run prompt test</button></form>
+    <div id="probe-result" class="callout" hidden></div>
+    <div class="callout"><h3>Use the verified output</h3><p>Each completed expansion or healing run shows its model folder. It contains a standard Transformers configuration, SafeTensors weights, tokenizer, and a model_surgery.json provenance report. Use that folder with Transformers, or select it as a parent here for more expansion or healing.</p><p>For a continued domain run, retain a separate general evaluation set and compare both domain performance and general ability. More parameters alone do not establish improvement.</p></div>
+  </section>
+  <section id="panel-history" class="panel" hidden><div class="section-heading"><h2>Runs & checkpoint evidence</h2><button id="refresh" class="secondary">Refresh</button></div><p>Every action has a separate run. Cancelling or failing a run preserves its parent checkpoints. Partial output is never offered as a verified model.</p><div id="jobs" aria-live="polite"><p>No runs loaded. Connect the workspace to see history.</p></div></section>
+  <aside id="active-job" class="active-job" aria-live="polite" hidden></aside>
+  <footer>© 2026 Reallexi LLC · Apache-2.0 community extension · <a href="https://llm.reallexi.io" target="_blank" rel="noreferrer">AI Model Builder</a></footer>
+</main><script src="./app.js" defer></script>
+</body></html>

@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${REALLEXI_BACKEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-backend:1.4.15}
+    image: ${REALLEXI_BACKEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-backend:1.4.18}
     restart: unless-stopped
     environment:
       PYTHONUNBUFFERED: "1"
@@ -15,6 +15,8 @@ services:
       REALLEXI_BACKEND_DATA_DIR: ${PWD}/data/backend
     volumes:
       - ./data/backend:/app/backend/data
+      - ./extensions/plugins/model-surgery:/app/extensions/plugins/model-surgery:ro
+      - ./local-inputs:/app/local-inputs:ro
     ports:
       - "127.0.0.1:58080:58080"
     healthcheck:
@@ -24,7 +26,7 @@ services:
       retries: 12
 
   frontend:
-    image: ${REALLEXI_FRONTEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-frontend:1.4.15}
+    image: ${REALLEXI_FRONTEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-frontend:1.4.18}
     restart: unless-stopped
     depends_on:
       backend:

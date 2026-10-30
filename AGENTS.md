@@ -8,7 +8,8 @@ public AI Model Builder launcher repository.
 ## Public Boundaries
 
 * Keep Reallexi LLC ownership, copyright, package identity, and backlink.
-* Do not add application source or GitHub Pages source and workflows.
+* Private application source and GitHub Pages source/workflows stay excluded.
+  Only the explicitly allowlisted Model Surgery community extension ships source.
 * Do not document internal operations, private implementation details,
   customer data, credentials, local databases, uploads, or model artifacts.
 * Prefer documentation, examples, issue templates, plugin manifests, theme

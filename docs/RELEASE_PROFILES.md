@@ -16,6 +16,11 @@ Public launcher files live at https://github.com/ddkits/reallexi-ai-model-builde
 community files, validation scripts, package access metadata, and Docker Compose
 runtime references. It does not ship private source.
 
+Model Surgery is the explicit community source exception: its approved
+extension files and [guide](MODEL_SURGERY.md) ship publicly, including the
+[wiki sources](wiki/Model-Surgery.md). Other runtime implementations and
+private sibling plugins remain excluded.
+
 ## Public-Safe Guides
 
 The generated public repository includes public-safe guides only:
