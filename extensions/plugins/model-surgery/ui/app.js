@@ -107,7 +107,11 @@ function nextAction() {
       title = healed ? 'Next: evaluate the healed model' : 'Expansion complete. Next: healing';
       detail = 'Your verified checkpoint is saved. Continue with it in the next step.';
       label = healed ? 'Continue to prompt test' : 'Continue to healing';
-      run = () => { $(healed ? 'probe-parent' : 'heal-parent').value = checkpoint.id; view(healed ? 'review' : 'heal'); };
+      run = () => {
+        $(healed ? 'probe-parent' : 'heal-parent').value = checkpoint.id;
+        if (!healed) { state.healPlan = null; $('heal-results').hidden = true; }
+        view(healed ? 'review' : 'heal');
+      };
     } else {
       title = 'Create an expanded checkpoint first'; detail = 'Start with a supported model in Plan & expand.'; label = 'Go to model plan'; run = () => view('plan');
     }

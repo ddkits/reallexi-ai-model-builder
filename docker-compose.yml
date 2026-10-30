@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${REALLEXI_BACKEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-backend:1.4.20}
+    image: ${REALLEXI_BACKEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-backend:1.4.21}
     restart: unless-stopped
     environment:
       PYTHONUNBUFFERED: "1"
@@ -26,7 +26,7 @@ services:
       retries: 12
 
   frontend:
-    image: ${REALLEXI_FRONTEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-frontend:1.4.20}
+    image: ${REALLEXI_FRONTEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-frontend:1.4.21}
     restart: unless-stopped
     depends_on:
       backend:
