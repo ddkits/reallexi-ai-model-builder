@@ -23,6 +23,14 @@ runtime's existing Torch, Transformers, SafeTensors, and Hub dependencies.
 
 ## 1. Plan and expand
 
+Expanded and healed outputs are named **Lexi {size}B**, using the measured
+parameter count rounded to three decimals for billion-parameter models. Existing
+surgery checkpoints receive this display name without rewriting their weights.
+New outputs save it in `config.json`, `model_surgery.json`, and their model card.
+The Transformers architecture identifiers remain unchanged so loading works.
+Upstream dependencies, source lineage, and license notices are retained; naming
+a derived checkpoint Lexi does not make an adapter independent of its source.
+
 The **Your models** picker loads automatically when you connect. It groups
 completed training jobs, existing merged SafeTensors exports, local model
 folders, downloaded Hugging Face checkpoints, and previous surgery outputs.
@@ -75,8 +83,14 @@ separator. Nothing is scanned across the entire drive or home directory.
    first; the start error also appears beside the button.
    The worker saves the expanded checkpoint separately, reloads it,
    checks the layer count, parameter count, weights, and finite output, then
-   publishes it in history with **needs healing** status.
-   Follow **Continue to healing** when it completes. On the Heal tab, provide
+   publishes it in history with **needs healing** status when run on its own.
+   To run both stages together, prepare the recipe on **Heal**, return to
+   **Plan & expand**, enable **Automatically heal the new checkpoint**, and
+   inspect again. The combined check budgets space for both checkpoints and
+   optimizer state. The worker starts healing after verifying the expansion
+   and checking resources again. If healing stops, the verified expansion is
+   available in Run history for a fresh healing run.
+   For manual healing, follow **Continue to healing**. On the Heal tab, provide
    training and separate evaluation text, check resources, then select
    **Start healing**. The next-step bar also offers the prompt test afterward.
 
@@ -109,8 +123,92 @@ Resource estimates and current RAM/disk availability determine whether a run can
 start. Expansion uses CPU float32 weights for predictable serialization. A Hub
 download also consumes cache space. Estimates cannot guarantee that an operating
 system or competing workload will leave enough resources throughout the run.
+The expansion RAM estimate already includes a 60% allowance plus 1 GiB; it is
+compared directly with currently available RAM without another 15% reservation.
+The worker checks again before loading, and a blocked check reports both required
+and available memory. Growing an expanded checkpoint uses the same supported
+recipe and creates a new output without changing the selected parent.
+
 
 ## 2. Heal with continual pre-training
+
+### Build the Reallexi knowledge dataset automatically
+
+On **Heal**, select **Build Reallexi dataset**. The isolated collector starts
+at `https://reallexi.io/`, follows public links and sitemaps across its linked
+subdomains, and fetches directly linked Apple/Google app listings, Chrome Web
+Store extensions, VS Code Marketplace items, and Microsoft Store pages. It
+records all outgoing links but does not crawl unrelated sites or recommended
+apps from store pages. Add known, unlinked Reallexi subdomains in collection
+options. It does not enumerate DNS, access accounts/private pages, or execute
+page JavaScript. Missing/blocked content appears in the coverage manifest.
+
+The download is a reusable ZIP containing:
+
+| File | Purpose |
+| --- | --- |
+| `documents.jsonl` | Public source text, title, URL, retrieval time, content hash, outgoing links, and split. |
+| `apps.json` | Directly linked app listings, source product pages/titles, fetched listing descriptions, and missing-listing indicators. |
+| `links.csv` | Link catalog with source URLs, labels, and directly linked store-listing flags. |
+| `train.txt` | Training documents with source attribution and links. |
+| `evaluation.txt` | Separate held-out documents. Keep these out of training. |
+| `manifest.json` | Coverage, failures, discovered domains, remaining URLs, budgets, file hashes, and source terms. |
+| `README.md` | Reuse instructions and snapshot limitations. |
+
+The split is reproducible at document level after exact-text deduplication.
+Shared navigation and boilerplate may remain. Review dataset quality and
+third-party source terms before training or redistributing. The default budget
+is 500 URLs, configurable to 10,000 per snapshot, plus 10 minutes and 64 MiB of
+text. Each response is limited to 4 MiB. A budget-limited snapshot reports
+unfinished discovery; it does not claim to contain all public information.
+Every build has a new directory. Cancelling collection never starts training.
+
+To collect **and automatically train**, first select a verified Lexi parent,
+device, and training settings below, confirm data rights, then enable
+**After collection…all-parameter training** before building. Once collection
+finishes, the worker sets the generated training/evaluation paths and requests
+full-model healing through the normal fresh preflight. An active core job,
+insufficient memory/disk, or invalid parent blocks training while retaining the
+completed downloadable dataset. Collection can continue if the browser closes.
+Reconnect to recover its status; successful training appears in Run history.
+
+### Pick the training settings
+
+For a workflow pilot, use inserted-only training, an available GPU, 100 steps,
+sequence length 256, learning rate 0.00001, accumulation 1, and 8 evaluation
+blocks. These defaults verify execution rather than certify model quality.
+Full training means **All model parameters**, not simply more steps. Use
+**Prepare full GPU training settings** to fill full scope, a detected GPU,
+automatic Smart phases, and the short pilot settings. Select the parent and confirm
+rights yourself, then check resources or build the automatic dataset pipeline.
+This helper does not start training.
+
+At 2.246B
+parameters, float32 weights plus AdamW training state require about 33.5 GiB
+before activations and safety margin, exceeding a 32 GiB GPU. The optional
+**8-bit AdamW state** optimizer keeps model weights/gradients in float32 and
+updates every selected parameter, while reducing optimizer-state memory. It
+requires bitsandbytes in an NVIDIA CUDA runtime. Its resource estimate reserves
+extra space for small tensors that retain fp32 state. The collector
+never silently downgrades the requested training scope. Select a sufficiently
+large device or CPU/RAM environment and pass its resource check.
+
+**Smart phases** keeps the selected model, trainable scope, steps, and sequence
+length. It chooses standard AdamW, available 8-bit state, or disk-backed AdamW
+according to free memory. Disk mode streams gradients and Adam moments through
+4 MiB buffers, clips gradients globally, and updates every selected parameter.
+It needs additional disk space and can run substantially slower. If GPU weights
+cannot fit, automatic planning can choose CPU execution when backend RAM fits.
+Checkpoint saving uses 256 MiB shards; an individual tensor can exceed that size.
+Disk optimizer moments are working files, not resumable optimizer checkpoints.
+
+RAM shown here is memory visible inside the backend. A Windows computer with
+64 GB installed can expose only 24 GB to Docker/WSL. GPU VRAM is separate again.
+The readiness report shows free/total RAM and VRAM; loading estimates already
+include headroom and do not apply a second RAM reserve. Data-file size does not
+determine model-state memory: a 2.45 MiB corpus still trains billions of weights.
+Chunking data/state does not remove the resident-weight minimum, so 1 GiB of
+total system RAM cannot train an arbitrary model. No model or scope is reduced.
 
 Select **Heal this checkpoint** in history. Provide UTF-8 `.txt` or `.md` files
 for training and separate held-out evaluation. Small files up to 16 MiB each can
@@ -124,8 +222,10 @@ model parameters** for full continual pre-training. The selected weights are
 trained directly with AdamW; this workflow does not substitute LoRA. CPU and
 runtime-visible CUDA/ROCm accelerators are available. Gradient checkpointing,
 microbatch size one, and configurable accumulation reduce activation memory.
-Float32 weights, gradients, and optimizer state still require substantial
-memory. Distributed DeepSpeed, GaLore, quantized training, and optimizer-state
+Float32 model weights and gradients still require substantial memory. Standard
+AdamW uses fp32 optimizer state; 8-bit AdamW compresses only that state and is
+not model-weight quantization or LoRA. See the [bitsandbytes optimizer guide](https://huggingface.co/docs/bitsandbytes/main/optimizers).
+Distributed DeepSpeed, GaLore, quantized model-weight training, and optimizer-state
 resumption are not implemented by this extension.
 
 Set sequence length within the model's context window, learning rate, optimizer
@@ -154,7 +254,12 @@ before completion. A lower loss on this sample does not certify broad quality.
 
 Run the same prompt samples and external task benchmarks against the original,
 expanded, and healed models. The page can run deterministic CPU prompt tests on
-any verified expansion/healing checkpoint. It does not certify the checkpoint
+any verified expansion/healing checkpoint. Prompt tests use the checkpoint's
+chat template when available. Choose **Raw text completion** for a continuation
+test. Combined runs report held-out loss for the starting checkpoint,
+the expanded checkpoint, and the healed candidate on the same text. Loss
+uses next-token prediction, so also test representative chat tasks before
+using the candidate. The workspace does not certify the checkpoint
 for deployment or automatically publish it.
 
 History shows the backend model directory. Each verified output contains a

@@ -17,7 +17,21 @@ Llama and Qwen2 causal text models in SafeTensors format.
 See the [complete guide](../../../docs/MODEL_SURGERY.md) and
 [wiki](../../../docs/wiki/Model-Surgery.md).
 
+Prepare a healing recipe to run expansion and training together. The worker
+reserves resources for both checkpoints, checks the source and candidate on the
+same held-out text, and keeps the verified expansion available if healing stops.
+Prompt tests use the saved chat template when present. Generated model cards
+carry Reallexi LLC tool copyright and retain upstream license files.
+
 All runtime routes, pages, and code modules are declared in `plugin.json`.
 No paid entitlement is required. The extension uses the existing local Admin
 boundary and sandbox bridge, separate worker processes, and new output folders.
 The core's existing Python dependencies supply Torch and Transformers.
+
+The Heal page can collect public Reallexi websites, linked subdomains, and direct
+app-store listings into a reusable ZIP (`documents.jsonl`, `apps.json`,
+`links.csv`, training/evaluation text, and coverage/terms). An opt-in pipeline
+starts full-model healing only after fresh resource and active-job checks.
+Outputs are named Lexi by measured size; loader identifiers and upstream
+dependency/license metadata remain valid. The `ui:download` permission enables
+ZIP downloads within this extension's sandbox.

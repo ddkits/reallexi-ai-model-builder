@@ -36,10 +36,9 @@ if (compose.status !== 0) {
 }
 
 const envFile = path.join(publicRoot, '.env');
-const envExample = path.join(publicRoot, '.env.example');
-if (!fs.existsSync(envFile) && fs.existsSync(envExample)) {
-  fs.copyFileSync(envExample, envFile);
-  console.log('[public] Wrote .env from .env.example.');
+if (!fs.existsSync(envFile)) {
+  fs.writeFileSync(envFile, '# Local Admin token. Keep this file private.\nADMIN_TOKEN=\n', { flag: 'wx' });
+  console.log('[public] Created local .env with an empty Admin token.');
 }
 
 if (process.env.GITHUB_ACTIONS === 'true') {

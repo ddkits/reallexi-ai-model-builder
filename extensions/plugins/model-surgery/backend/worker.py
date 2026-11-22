@@ -55,11 +55,12 @@ def run_job(job_dir):
         check()
         state.update(changes, updated_at=time.time())
         surgery.write_json(job_dir / "status.json", state)
+    plugin = importlib.import_module("extensions.plugins.model-surgery.backend.plugin")
     try:
         with worker_lock(job_dir.parent):
             progress(status="running", stage="preflight", message="Checking current resources", pid=os.getpid())
             if request["operation"] == "expand":
-                plan = surgery.inspect(request, job_dir)
+                plan = plugin.expansion_preflight(request, job_dir)
                 if not plan["ready"]:
                     raise ValueError(" ".join(plan["blockers"]))
                 progress(stage="downloading", message="Resolving source weights at the reviewed revision")
@@ -69,11 +70,32 @@ def run_job(job_dir):
                     from huggingface_hub import snapshot_download
                     source = snapshot_download(request["source"], revision=plan["revision"], **surgery.hub_kwargs(),
                         allow_patterns=["config.json", "generation_config.json", "*.safetensors", "*.safetensors.index.json",
-                            "tokenizer*", "special_tokens_map.json", "vocab.json", "vocab.txt", "merges.txt", "added_tokens.json"])
+                            "tokenizer*", "chat_template*", "special_tokens_map.json", "vocab.json", "vocab.txt", "merges.txt",
+                            "added_tokens.json", "LICENSE*", "NOTICE", "COPYRIGHT.md"])
                 check()
+                recipe = request.get("healing_recipe")
+                def evaluate_source(model, tokenizer):
+                    progress(stage="evaluating_source", message="Measuring held-out loss on the starting checkpoint")
+                    evaluation = recipe["eval_file"]
+                    digest = healing.file_hash(evaluation)
+                    result = healing.evaluate(model, tokenizer, evaluation, recipe["sequence_length"], recipe["eval_blocks"], "cpu", check)
+                    if healing.file_hash(evaluation) != digest:
+                        raise ValueError("The evaluation file changed while measuring source loss.")
+                    return {"evaluation": result, "eval_sha256": digest}
                 evidence = surgery.surgery(str(source), str(job_dir / "partial"), plan["first"], plan["count"], plan["copies"],
-                    request.get("initialization", "identity"), check, progress)
+                    request.get("initialization", "identity"), check, progress, evaluate_source if recipe else None)
                 evidence.update(source=request["source"], source_revision=plan["revision"])
+                if recipe:
+                    expanded = job_dir / "expanded"
+                    surgery.write_json(job_dir / "partial" / "model_surgery.json", evidence)
+                    surgery.model_card(job_dir / "partial", evidence)
+                    (job_dir / "partial").rename(expanded)
+                    progress(stage="healing_preflight", message="Expansion verified. Checking current resources for automatic healing")
+                    plugin.refuse_active_training()
+                    healing_request = {**recipe, "source": str(expanded)}
+                    baseline = {"evaluation": evidence["source_evaluation"], "eval_sha256": evidence["eval_sha256"]}
+                    evidence = healing.heal(str(expanded), job_dir / "partial", healing_request, check, progress, baseline)
+                    state["expanded_model_path"] = str(expanded)
             elif request["operation"] == "heal":
                 plan = healing.preflight(request, job_dir)
                 if not plan["ready"]:
@@ -81,7 +103,6 @@ def run_job(job_dir):
                 evidence = healing.heal(request["source"], job_dir / "partial", request, check, progress)
             else:
                 # Keep prompt tests in the same resource-isolated worker queue.
-                plugin = importlib.import_module("extensions.plugins.model-surgery.backend.plugin")
                 plan = plugin.probe_preflight(request, job_dir)
                 if not plan["ready"]:
                     raise ValueError(" ".join(plan["blockers"]))
@@ -94,13 +115,13 @@ def run_job(job_dir):
                         return False
                 model, tokenizer = surgery.load_model(request["source"])
                 model.eval()
-                inputs = tokenizer(request["prompt"], return_tensors="pt")
-                inputs.pop("token_type_ids", None)
+                inputs, prompt_format = plugin.probe_inputs(tokenizer, request)
                 with torch.inference_mode():
                     output = model.generate(**inputs, max_new_tokens=request["max_new_tokens"], do_sample=False,
                         pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id,
                         stopping_criteria=StoppingCriteriaList([CheckCancellation()]))
-                evidence = {"prompt": request["prompt"], "completion": tokenizer.decode(output[0, inputs["input_ids"].shape[1]:], skip_special_tokens=True),
+                evidence = {"prompt": request["prompt"], "prompt_format": prompt_format,
+                            "completion": tokenizer.decode(output[0, inputs["input_ids"].shape[1]:], skip_special_tokens=True),
                             "quality_validated": False}
                 check()
                 state.update(status="completed", stage="completed", message="Prompt sample ready for review", evidence=evidence, updated_at=time.time())
@@ -108,14 +129,18 @@ def run_job(job_dir):
                 return
             check()
             surgery.write_json(job_dir / "partial" / "model_surgery.json", evidence)
+            surgery.model_card(job_dir / "partial", evidence)
             (job_dir / "partial").rename(job_dir / "model")
             # Commit completion before a late cancellation can alter the state.
-            state.update(status="completed", stage="completed", message="Checkpoint verified", evidence=evidence,
+            message = "Expansion and healing completed. Review the comparison before use." if request.get("healing_recipe") else "Checkpoint verified"
+            state.update(status="completed", stage="completed", message=message, evidence=evidence,
                          model_path=str(job_dir / "model"), updated_at=time.time())
             surgery.write_json(job_dir / "status.json", state)
     except Exception as error:
-        state.update(status="cancelled" if isinstance(error, Cancelled) else "failed", stage="stopped",
-                     message=str(error), updated_at=time.time())
+        cancelled = isinstance(error, Cancelled)
+        if not plugin.preserve_expansion(job_dir, state, "healing_cancelled" if cancelled else "healing_failed", str(error)):
+            state.update(status="cancelled" if cancelled else "failed", stage="stopped",
+                         message=str(error), updated_at=time.time())
         surgery.write_json(job_dir / "status.json", state)
         if not isinstance(error, Cancelled):
             import traceback

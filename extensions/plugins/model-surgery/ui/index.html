@@ -39,10 +39,11 @@
         <button type="button" id="middle" class="secondary" disabled>Use the middle third</button><small>Copies a middle third of the source layers once. Inspect first so the source depth is known.</small>
       </details>
       <label>Initialization · how the new layers start<select id="initialization" aria-describedby="initialization-help"><option value="identity">Identity residuals · recommended starting point</option><option value="copy">Copy existing weights · depth stacking</option></select><small id="initialization-help" aria-live="polite">Recommended: identity mode makes the added layers initially pass information through without changing the source probe output. The worker checks this. Train and evaluate afterward to make the added capacity useful.</small></label>
-      <div class="actions"><button type="submit" id="inspect">Inspect model & preview growth</button></div>
+      <label class="check"><input id="heal-after-expand" type="checkbox"><span>Automatically heal the new checkpoint after expansion using the training and evaluation files, data rights, and settings on the Heal tab.</span></label>
+      <div class="actions"><button type="submit" id="inspect">Inspect model & preview growth</button><button id="configure-auto-heal" type="button" class="secondary">Configure healing recipe</button></div>
     </form>
     <div id="plan-results" hidden>
-      <div id="expansion-action" class="expansion-action"><div><h3>Next: create your larger checkpoint</h3><p>Review the size below, then start expansion. This saves a new model; healing is the following step.</p></div><button id="expand" type="button" disabled>Start expansion</button></div>
+      <div id="expansion-action" class="expansion-action"><div><h3>Review the expansion plan</h3><p id="expansion-description">Expansion saves a new checkpoint. You can heal it from Run history.</p></div><button id="expand" type="button" disabled>Start expansion</button></div>
       <div id="plan-readiness"></div>
       <div class="metrics" id="size-metrics"></div>
       <p id="layer-description" class="callout"></p>
@@ -53,14 +54,29 @@
   </section>
   <section id="panel-heal" class="panel" hidden>
     <h2>Train the expanded checkpoint</h2><p>Continual pre-training uses raw text and next-token prediction. Choose a broad corpus for general ability, or a domain corpus with representative general text. Set the budget from pilot evaluations; no universal token count guarantees recovery.</p>
+    <label>Verified parent checkpoint<select id="heal-parent" form="heal-form" required><option value="">Create an expanded checkpoint first</option></select></label>
+    <div class="model-library" aria-labelledby="website-title">
+      <h3 id="website-title">Reallexi websites → reusable dataset</h3>
+      <p>Collect public text from reallexi.io, linked subdomains, and directly linked app-store listings. Includes app descriptions and links. The download contains source records, a link catalog, coverage/errors, training text, and separate evaluation text.</p>
+      <details><summary>Collection options & coverage</summary><p>Discovery follows links and sitemaps. It cannot find unlinked subdomains, private pages, or content available only after JavaScript runs. Store robots rules may block descriptions; the store link is still recorded. Coverage reports skipped pages and unfinished discovery.</p>
+        <label>Additional Reallexi subdomain URLs · one per line<textarea id="website-seeds" rows="3" placeholder="https://docs.reallexi.io/"></textarea></label>
+        <label>Maximum pages per snapshot<input id="website-pages" type="number" min="2" max="10000" step="1" value="500"><small>Each build also has a 10-minute / 64 MiB text budget. Review coverage and add specific seeds for missed sections.</small></label>
+      </details>
+      <label class="check"><input id="website-auto" type="checkbox"><span>After collection, check resources and automatically start <strong>all-parameter training</strong> using the selected parent, device, steps, and settings below.</span></label>
+      <p class="hint">Automatic training requires the data-rights confirmation below. If memory is insufficient or another job is running, the dataset remains reusable and the reason appears here. Full float32 AdamW training may exceed one GPU's memory.</p>
+      <button id="full-gpu-pilot" type="button" class="secondary">Prepare full GPU training settings</button><p class="hint">Fills full-model scope, a detected NVIDIA GPU, automatic smart memory phases, and the short pilot defaults below. It does not start training or confirm data rights.</p>
+      <div class="actions"><button id="website-build" type="button">Build Reallexi dataset</button><button id="website-cancel" type="button" class="secondary" hidden>Cancel collection</button><button id="website-download" type="button" class="secondary" hidden>Download reusable dataset ZIP</button><button id="website-use" type="button" class="secondary" hidden>Use this dataset for healing</button></div>
+      <div id="website-status" class="callout" role="status" hidden></div>
+    </div>
     <form id="heal-form">
-      <label>Verified parent checkpoint<select id="heal-parent" required><option value="">Create an expanded checkpoint first</option></select></label>
       <div class="grid two">
         <label>Training text path<input id="train-file" required placeholder="Backend path to training.txt"><small>UTF-8 .txt or .md. For small files, upload below.</small><input id="train-upload" type="file" accept=".txt,.md" aria-label="Upload training text"></label>
         <label>Held-out evaluation text path<input id="eval-file" required placeholder="Backend path to held-out.txt"><small>Keep this text out of training. Use the same set across comparisons.</small><input id="eval-upload" type="file" accept=".txt,.md" aria-label="Upload evaluation text"></label>
       </div>
       <div class="grid two"><label>Trainable weights<select id="train-scope"><option value="inserted">Inserted layers only</option><option value="full">All model parameters</option></select><small>Inserted-only training freezes original weights. It can still change outputs. This is full-weight training of the selected layers, not LoRA.</small></label><label>Training device<select id="device"><option value="cpu">CPU</option></select><small>Only devices visible to the backend are listed. Memory is checked again when the worker starts.</small></label></div>
-      <div class="grid three"><label>Optimizer steps<input id="steps" type="number" min="1" step="1" value="100" required></label><label>Sequence length<input id="sequence-length" type="number" min="2" step="1" value="256" required></label><label>Learning rate<input id="learning-rate" type="number" min="0" step="any" value="0.00001" required></label></div>
+      <label>Memory strategy<select id="optimizer"><option value="auto">Smart phases · choose automatically · recommended</option><option value="adamw">Standard AdamW · CPU or GPU</option><option value="adamw8bit">8-bit AdamW state · NVIDIA GPU</option><option value="disk_adamw">Chunked AdamW · gradients and optimizer state on disk</option></select><small>Smart phases keeps your model, training scope, steps, and sequence length. It chooses a fitting optimizer, streams gradients/state to disk when necessary, and can use CPU execution when GPU weights do not fit. Disk mode is slower and needs working disk space. Model weights must still fit the chosen CPU/GPU resident-memory minimum; a 1 GiB GPU can use CPU RAM, but 1 GiB of total system memory cannot fit every model.</small></label>
+      <p class="hint">First pilot: inserted layers only, an available GPU, 100 steps, 256 sequence length, 0.00001 learning rate, accumulation 1, evaluation blocks 8. This checks the workflow; it does not establish quality. Use All model parameters when you want full training and its memory check passes.</p>
+      <div class="grid three"><label>Optimizer steps<input id="steps" type="number" min="1" step="1" value="100" required><small>Number of weight updates. More steps can repeat the same data; history reports token exposures and repeats.</small></label><label>Sequence length<input id="sequence-length" type="number" min="2" step="1" value="256" required><small>Tokens per text block. Longer blocks need more memory and must fit the model context window.</small></label><label>Learning rate<input id="learning-rate" type="number" min="0" step="any" value="0.00001" required><small>Size of each weight update. Start with the pilot value, then tune using held-out results.</small></label></div>
       <div class="grid two"><label>Gradient accumulation<input id="accumulation" type="number" min="1" step="1" value="1" required><small>Microbatch size is one. Accumulation increases the effective batch.</small></label><label>Evaluation blocks<input id="eval-blocks" type="number" min="1" step="1" value="8" required><small>Evaluation reads this many blocks from the start of your held-out file.</small></label></div>
       <label class="check"><input id="rights" type="checkbox" required> I have permission to train on this text and have kept evaluation data separate.</label>
       <p class="hint">Training streams the file and cycles through it when needed. The history reports token exposures and repeated passes. Start with a small pilot; these default settings are not a model-quality recommendation.</p>
@@ -71,6 +87,7 @@
   <section id="panel-review" class="panel" hidden>
     <h2>Inspect behavior before using the model</h2><p>A successful reload proves the files work. Held-out loss and prompt samples help assess behavior; they do not certify broad quality or retained capabilities. Compare against the original base on representative tasks before deployment.</p>
     <form id="probe-form"><label>Verified checkpoint<select id="probe-parent" required><option value="">No checkpoint yet</option></select></label><label>Test prompt<textarea id="prompt" rows="4" required placeholder="Use the same prompt you tested on the original model."></textarea></label>
+      <label>Prompt format<select id="prompt-format"><option value="auto">Use the model’s chat template when available</option><option value="raw">Raw text completion</option></select></label>
       <label>Maximum new tokens<input id="new-tokens" type="number" min="1" step="1" value="64" required></label><button type="submit">Run prompt test</button></form>
     <div id="probe-result" class="callout" hidden></div>
     <div class="callout"><h3>Use the verified output</h3><p>Each completed expansion or healing run shows its model folder. It contains a standard Transformers configuration, SafeTensors weights, tokenizer, and a model_surgery.json provenance report. Use that folder with Transformers, or select it as a parent here for more expansion or healing.</p><p>For a continued domain run, retain a separate general evaluation set and compare both domain performance and general ability. More parameters alone do not establish improvement.</p></div>
@@ -78,6 +95,6 @@
   <section id="panel-history" class="panel" hidden><div class="section-heading"><h2>Runs & checkpoint evidence</h2><button id="refresh" class="secondary">Refresh</button></div><p>Every action has a separate run. Cancelling or failing a run preserves its parent checkpoints. Partial output is never offered as a verified model.</p><div id="jobs" aria-live="polite"><p>No runs loaded. Connect the workspace to see history.</p></div></section>
   <aside id="active-job" class="active-job" aria-live="polite" hidden></aside>
   <aside id="next-action" class="next-action" aria-label="Next step"><div><strong id="next-title">Connect to begin</strong><p id="next-detail">Connect to your local workspace to start.</p></div><button id="next-button" type="button">Connect to start</button></aside>
-  <footer>© 2026 Reallexi LLC · Apache-2.0 community extension · <a href="https://llm.reallexi.io" target="_blank" rel="noreferrer">AI Model Builder</a></footer>
+  <footer>Copyright © 2026 Reallexi LLC. All rights reserved. · Apache-2.0 community extension · <a href="https://llm.reallexi.io" target="_blank" rel="noreferrer">AI Model Builder</a></footer>
 </main><script src="./app.js" defer></script>
 </body></html>

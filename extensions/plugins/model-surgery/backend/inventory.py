@@ -12,7 +12,8 @@ import os
 from pathlib import Path
 import sqlite3
 
-SUPPORTED = importlib.import_module("extensions.plugins.model-surgery.backend.surgery").SUPPORTED
+surgery = importlib.import_module("extensions.plugins.model-surgery.backend.surgery")
+SUPPORTED = surgery.SUPPORTED
 MAX_METADATA_BYTES = 4 * 1024 * 1024
 SCAN_DIRECTORIES = 3000
 SCAN_DEPTH = 5
@@ -117,6 +118,10 @@ def default_hub_roots(data_root):
 def discover(project_root, data_root, store, directory=None, *, local_roots=None, hub_roots=None):
     project_root, data_root, store = Path(project_root), Path(data_root), Path(store)
     models, roots, warnings, seen = [], [], [], set()
+    def owned_name(manifest):
+        proof = manifest.get("proof") or {}
+        parameters = manifest.get("total_parameters") or (proof.get("model_memory_profile") or {}).get("total_parameters") or proof.get("total_parameter_count")
+        return surgery.lexi_name(parameters) if isinstance(parameters, (int, float)) and parameters > 0 else "Lexi checkpoint"
     def add(path, kind, label, job_id=None, reason=None):
         try:
             path = path.resolve()
@@ -149,7 +154,7 @@ def discover(project_root, data_root, store, directory=None, *, local_roots=None
             folder, reason = artifact, "RAG index. It has no Transformer weights to expand."
         elif (manifest.get("numerical_validation") or {}).get("valid") is False:
             reason = "This artifact failed numerical validation. Use a healthy checkpoint instead."
-        add(folder, "trained", f"{job['name']} · job #{job_id}", job_id, reason)
+        add(folder, "trained", f"{owned_name(manifest)} · {job['name']} · job #{job_id}", job_id, reason)
 
     names = {int(job["id"]): job["name"] for job in jobs}
     exports = data_root / "model_exports"
@@ -166,7 +171,7 @@ def discover(project_root, data_root, store, directory=None, *, local_roots=None
                     continue
                 status = (formats.get(state_key) or {}).get("status")
                 reason = None if status in {None, "ready", "completed"} else f"Export is {status}. Finish or rebuild the SafeTensors export, then refresh."
-                add(path, "merged", f"{names.get(job_id, 'Trained model')} · job #{job_id} · {'custom merge' if folder.startswith('custom') else 'merged SafeTensors'}", job_id, reason)
+                add(path, "merged", f"{owned_name(metadata(path / 'reallexi-model.json'))} · {names.get(job_id, 'Trained model')} · job #{job_id} · {'custom merge' if folder.startswith('custom') else 'merged SafeTensors'}", job_id, reason)
 
     record_root("Surgery checkpoints", store)
     if store.is_dir():
@@ -175,7 +180,12 @@ def discover(project_root, data_root, store, directory=None, *, local_roots=None
                 continue
             state = metadata(job_dir / "status.json")
             if state.get("status") == "completed" and state.get("operation") in {"expand", "heal"}:
-                add(job_dir / "model", "surgery", f"{'Healed' if state['operation'] == 'heal' else 'Expanded'} checkpoint · {job_dir.name[:8]}")
+                evidence = state.get("evidence") or {}
+                parameters = evidence.get("expanded_parameters")
+                name = evidence.get("model_name") or (f"Lexi {parameters / 1e9:.3f}B" if isinstance(parameters, (int, float)) and parameters >= 1e9 else "Lexi checkpoint")
+                trained = evidence.get("status") == "trained_needs_quality_review" or state["operation"] == "heal"
+                checkpoint = job_dir / ("expanded" if str(state.get("stage", "")).startswith("healing_") else "model")
+                add(checkpoint, "surgery", f"{name} · {'Healed' if trained else 'Expanded'} · {job_dir.name[:8]}")
 
     def scan(root, label):
         root = root.resolve()

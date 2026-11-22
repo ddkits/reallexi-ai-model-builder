@@ -7,7 +7,8 @@ private implementation functions or internal admin flows.
 
 The community Model Surgery manifest declares its page, assets, local Admin
 bridge permission, reviewed code modules, and isolated worker. Its own routes
-provide planning, jobs, text upload, and cancellation. It installs no core
+provide planning, automatic expansion and healing, chat prompt tests, text
+upload, and cancellation. It installs no core
 training hooks and requires no paid capability. The exact allowlisted source
 ships publicly; private implementations retain their existing assignments.
 See the [guide](MODEL_SURGERY.md) and [wiki](wiki/Model-Surgery.md).

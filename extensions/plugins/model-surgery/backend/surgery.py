@@ -7,6 +7,7 @@ from __future__ import annotations
 import copy
 import gc
 import json
+import importlib
 import shutil
 import uuid
 from pathlib import Path
@@ -14,6 +15,41 @@ from pathlib import Path
 
 SUPPORTED = {"llama", "qwen2"}
 GIB = 1024 ** 3
+ATTRIBUTION = {
+    "tool_owner": "Reallexi LLC",
+    "tool_copyright": "Copyright (c) 2026 Reallexi LLC. All rights reserved.",
+    "tool_license": "Apache-2.0",
+    "core_backlink": "https://llm.reallexi.io",
+}
+
+
+def lexi_name(parameters):
+    """Product identity; keep the architecture identifiers load-compatible."""
+    digits = 3 if parameters >= 1e6 else 9
+    return f"Lexi {parameters / 1e9:.{digits}f}B"
+
+
+def model_card(destination, evidence):
+    name = lexi_name(evidence["expanded_parameters"])
+    source = str(evidence.get("source") or "")
+    # Never publish a machine-specific source path as a Hub model dependency.
+    import re
+    upstream = source if re.fullmatch(r"[\w.-]+/[\w.-]+", source) else ""
+    header = f"---\nmodel_name: {name}\nlibrary_name: transformers\npipeline_tag: text-generation\n"
+    if upstream:
+        header += f"base_model: {upstream}\n"
+    header += "tags:\n- lexi\n- reallexi\n---\n"
+    text = f"{header}\n# {name}\n\nA full Lexi checkpoint with {evidence['expanded_parameters']:,} parameters.\n\nStatus: {evidence['status']}. Expansion and successful reload do not certify model quality. Review held-out results and representative tasks before deployment.\n\n"
+    if upstream:
+        text += f"Upstream source: https://huggingface.co/{upstream}\n\n"
+    if "after_evaluation" in evidence:
+        results = []
+        for key, label in (("source_evaluation", "starting checkpoint"), ("before_evaluation", "before healing"), ("after_evaluation", "after healing")):
+            if key in evidence:
+                results.append(f"{label} {evidence[key]['loss']:.4f}")
+        text += f"Held-out loss ({evidence['after_evaluation']['tokens']:,} tokens): {', '.join(results)}.\n\n"
+    text += f"Created using Reallexi LLC AI Model Builder: {ATTRIBUTION['core_backlink']}\n\nTool attribution: {ATTRIBUTION['tool_copyright']}\n\nUpstream models and datasets retain their licenses and terms. Architecture identifiers in config.json remain load-compatible. See model_surgery.json for lineage and verification evidence.\n"
+    (Path(destination) / "README.md").write_text(text, encoding="utf-8")
 
 
 def integer(value, label, minimum=1):
@@ -106,8 +142,11 @@ def inspect(request, output_root):
     # CPU float32 expansion, saving and reloading one model at a time.
     ram_gb, disk_gb = expanded * 4 / GIB * 1.6 + 1, expanded * 4 / GIB * 1.1 + .1
     blockers = []
-    if ram_gb > float(capacity.get("memory_available_gb") or 0) * .85:
-        blockers.append(f"Surgery needs approximately {ram_gb:.2f} GiB available RAM including headroom.")
+    available_ram = float(capacity.get("memory_available_gb") or 0)
+    # ram_gb already reserves 60% extra plus 1 GiB. A second 15% reserve
+    # made a green plan fail solely when its fresh worker imported Torch.
+    if ram_gb > available_ram:
+        blockers.append(f"Expansion needs about {ram_gb:.2f} GiB RAM including headroom; {available_ram:.2f} GiB is available now. Reduce added layers or free RAM, then check again.")
     if disk_gb > capacity["disk_free_gb"]:
         blockers.append(f"The output needs at least {disk_gb:.2f} GiB free disk space.")
     return {"architecture": config.model_type, "source_layers": config.num_hidden_layers,
@@ -115,6 +154,7 @@ def inspect(request, output_root):
             "expanded_parameters": expanded, "added_parameters": expanded - base,
             "first": first, "count": count, "copies": copies, "revision": revision,
             "estimated_ram_gb": round(ram_gb, 3), "estimated_disk_gb": round(disk_gb, 3),
+            "ram_headroom_included": True,
             "resources": capacity, "blockers": blockers, "ready": not blockers,
             "context_limit": int(config.max_position_embeddings)}
 
@@ -200,7 +240,8 @@ def expand_model(model, first: int, count: int, copies: int, initialization="cop
 
 
 def surgery(source: str, destination: str, first: int, count: int, copies: int,
-            initialization="copy", check=lambda: None, progress=lambda **kw: None) -> dict:
+            initialization="copy", check=lambda: None, progress=lambda **kw: None,
+            evaluate_source=None) -> dict:
     """Save and reload an expanded local model into a newly created directory."""
     import torch
 
@@ -214,6 +255,7 @@ def surgery(source: str, destination: str, first: int, count: int, copies: int,
     model, tokenizer = load_model(src)
     finite_weights(model)
     old_logits = finite_probe(model, tokenizer)
+    source_baseline = evaluate_source(model, tokenizer) if evaluate_source else None
     before = sum(p.numel() for p in model.parameters())
     check()
     progress(stage="expanding", message="Creating independent layer copies")
@@ -222,11 +264,15 @@ def surgery(source: str, destination: str, first: int, count: int, copies: int,
     if initialization == "identity" and not identity_preserved:
         raise ValueError("Identity initialization did not preserve the source probe logits.")
     after = sum(p.numel() for p in model.parameters())
+    model.config.model_name = lexi_name(after)
     check()
     dst.mkdir(parents=True, exist_ok=False)
     progress(stage="saving", message="Saving expanded checkpoint")
-    model.save_pretrained(str(dst), safe_serialization=True)
+    importlib.import_module("extensions.plugins.model-surgery.backend.phases").save_checkpoint(model, str(dst))
     tokenizer.save_pretrained(str(dst))
+    for filename in ("LICENSE", "LICENSE.txt", "LICENSE.md", "NOTICE", "COPYRIGHT.md"):
+        if (src / filename).is_file():
+            shutil.copy2(src / filename, dst / filename)
     del model
     gc.collect()
     check()
@@ -236,10 +282,15 @@ def surgery(source: str, destination: str, first: int, count: int, copies: int,
         raise ValueError("Reloaded architecture or parameter count changed.")
     finite_weights(loaded)
     finite_probe(loaded, saved_tokenizer)
-    evidence = {"original_parameters": before, "expanded_parameters": after,
+    evidence = {"model_name": lexi_name(after), "base_model_type": loaded.config.model_type,
+                "original_parameters": before, "expanded_parameters": after,
                 "layer_map": plan, "inserted_layers": list(range(first + count, first + count + count * copies)),
                 "initialization": initialization, "status": "needs_healing", "reload_and_finite_logits": True,
                 "identity_probe_preserved": identity_preserved, "quality_validated": False,
-                "tool_owner": "Reallexi LLC", "tool_license": "Apache-2.0", "core_backlink": "https://llm.reallexi.io"}
+                **ATTRIBUTION}
+    if source_baseline:
+        evidence["source_evaluation"] = source_baseline["evaluation"]
+        evidence["eval_sha256"] = source_baseline["eval_sha256"]
     write_json(dst / "model_surgery.json", evidence)
+    model_card(dst, evidence)
     return evidence

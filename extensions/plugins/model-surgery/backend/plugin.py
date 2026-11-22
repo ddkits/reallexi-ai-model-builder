@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ctypes
+import base64
 from contextlib import closing
 import importlib
 import os
@@ -23,6 +24,18 @@ if str(PROJECT_ROOT) not in sys.path:
 surgery = importlib.import_module("extensions.plugins.model-surgery.backend.surgery")
 healing = importlib.import_module("extensions.plugins.model-surgery.backend.healing")
 inventory = importlib.import_module("extensions.plugins.model-surgery.backend.inventory")
+
+# The core reloads this entry point for each route, while Python caches its
+# dependencies. Refresh changed extension code without restarting other jobs.
+_reload_lock = getattr(surgery, "_extension_reload_lock", None)
+if _reload_lock is None:
+    _reload_lock = surgery._extension_reload_lock = threading.RLock()
+with _reload_lock:
+    for _module in (importlib.import_module("extensions.plugins.model-surgery.backend.phases"), surgery, healing, inventory):
+        _stamp = Path(_module.__file__).stat().st_mtime_ns
+        if getattr(_module, "_extension_source_stamp", None) != _stamp:
+            importlib.reload(_module)
+            _module._extension_source_stamp = _stamp
 
 DATA_ROOT = PROJECT_ROOT / "backend/data"
 STORE = DATA_ROOT / "model-surgery"
@@ -71,7 +84,9 @@ def job_status(directory):
             # A worker can exit between reading status and probing the PID.
             state = surgery.read_json(directory / "status.json")
             if state["status"] in {"queued", "running"}:
-                state.update(status="failed", stage="interrupted", message="Worker exited before checkpoint verification. Create a new run; parent checkpoints are preserved.")
+                message = "Worker exited before finishing the run."
+                if not preserve_expansion(directory, state, "healing_interrupted", message):
+                    state.update(status="failed", stage="interrupted", message=message)
                 surgery.write_json(directory / "status.json", state)
     return state
 
@@ -85,17 +100,44 @@ def jobs():
     return sorted(result, key=lambda item: item["created_at"], reverse=True)
 
 
+def preserve_expansion(directory, state, stage, message):
+    expanded = directory / "expanded"
+    if not (expanded / "model_surgery.json").is_file():
+        return False
+    final = directory / "model"
+    if (final / "model_surgery.json").is_file():
+        state.update(status="completed", stage="completed", message="Expansion and healing completed. Review the comparison before use.",
+                     evidence=surgery.read_json(final / "model_surgery.json"), model_path=str(final),
+                     expanded_model_path=str(expanded), updated_at=time.time())
+        return True
+    state.update(status="completed", stage=stage, message=f"{message} The expanded checkpoint is available for healing.",
+                 evidence=surgery.read_json(expanded / "model_surgery.json"), model_path=str(expanded), updated_at=time.time())
+    return True
+
+
+def healing_recipe(body):
+    return {"train_file": str(body.get("train_file") or "").strip(),
+            "eval_file": str(body.get("eval_file") or "").strip(),
+            "data_rights_confirmed": body.get("data_rights_confirmed") is True, **healing.options(body)}
+
+
 def normalize(body):
     operation = body.get("operation") or "expand"
     if operation not in {"expand", "heal", "probe"}:
         raise ValueError("Choose expansion, healing, or a prompt test.")
     if operation == "expand":
-        return {"operation": operation, "source": str(body.get("source") or "").strip(),
+        request = {"operation": operation, "source": str(body.get("source") or "").strip(),
                 "revision": str(body.get("revision") or "main").strip(),
                 "first": surgery.integer(body.get("first", 0), "First layer", 0),
                 "count": surgery.integer(body.get("count", 1), "Block layers"),
                 "copies": surgery.integer(body.get("copies", 1), "Additional copies"),
                 "initialization": str(body.get("initialization") or "identity")}
+        recipe = body.get("healing_recipe")
+        if recipe is not None:
+            if not isinstance(recipe, dict):
+                raise ValueError("Provide the healing recipe before starting automatic healing.")
+            request["healing_recipe"] = healing_recipe(recipe)
+        return request
     parent = job_status(job_path(body.get("parent_id")))
     if parent["status"] != "completed":
         raise ValueError("Select a completed, verified surgery checkpoint first.")
@@ -105,41 +147,70 @@ def normalize(body):
         prompt = str(body.get("prompt") or "").strip()
         if not prompt:
             raise ValueError("Enter a test prompt.")
-        return {"operation": operation, "parent_id": parent["id"], "source": parent["model_path"],
+        mode = body.get("prompt_format", "auto")
+        if mode not in ("auto", "raw"):
+            raise ValueError("Choose automatic chat formatting or raw completion.")
+        return {"operation": operation, "parent_id": parent["id"], "source": parent["model_path"], "prompt_format": mode,
                 "prompt": prompt, "max_new_tokens": surgery.integer(body.get("max_new_tokens", 64), "New tokens")}
-    request = {"operation": operation, "parent_id": parent["id"], "source": parent["model_path"],
-               "train_file": str(body.get("train_file") or "").strip(), "eval_file": str(body.get("eval_file") or "").strip(),
-               "data_rights_confirmed": body.get("data_rights_confirmed") is True, **healing.options(body)}
-    return request
+    return {"operation": operation, "parent_id": parent["id"], "source": parent["model_path"], **healing_recipe(body)}
+
+
+def expansion_preflight(request, root):
+    if request["initialization"] not in {"identity", "copy"}:
+        raise ValueError("Choose identity or copied initialization.")
+    plan = surgery.inspect(request, root)
+    if recipe := request.get("healing_recipe"):
+        train, evaluation = healing.validate_data(recipe)
+        if healing.file_hash(train) == healing.file_hash(evaluation):
+            raise ValueError("Training and evaluation files have identical contents. Use genuinely held-out text.")
+        training = healing.preflight({**recipe, "source": request["source"], "revision": plan["revision"]}, root, plan)
+        plan["healing"] = training
+        plan["blockers"] = list(dict.fromkeys([*plan["blockers"], *training["blockers"]]))
+        plan["ready"] = not plan["blockers"]
+    return plan
 
 
 def preflight(body):
     STORE.mkdir(parents=True, exist_ok=True)
     request = normalize(body)
     if request["operation"] == "expand":
-        if request["initialization"] not in {"identity", "copy"}:
-            raise ValueError("Choose identity or copied initialization.")
-        plan = surgery.inspect(request, STORE)
+        plan = expansion_preflight(request, STORE)
         request["revision"] = plan["revision"]
     elif request["operation"] == "heal":
         plan = healing.preflight(request, STORE)
+        # Preserve automatic intent and the preferred device in the recipe.
+        # The isolated worker chooses again using current free memory.
     else:
         plan = probe_preflight(request, STORE)
     return {"request": request, "plan": plan}
+
+
+def probe_inputs(tokenizer, request):
+    prompt = request["prompt"]
+    chat = request.get("prompt_format", "auto") == "auto" and bool(tokenizer.chat_template)
+    if chat:
+        prompt = tokenizer.apply_chat_template([{"role": "user", "content": prompt}],
+                                               tokenize=False, add_generation_prompt=True)
+    inputs = tokenizer(prompt, return_tensors="pt", add_special_tokens=not chat)
+    inputs.pop("token_type_ids", None)
+    return inputs, "chat" if chat else "raw"
 
 
 def probe_preflight(request, root):
     config, _ = surgery.configuration(request["source"])
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained(request["source"], local_files_only=True, trust_remote_code=False)
-    length = len(tokenizer.encode(request["prompt"]))
+    inputs, prompt_format = probe_inputs(tokenizer, request)
+    length = inputs["input_ids"].shape[-1]
     if length + request["max_new_tokens"] > config.max_position_embeddings:
         raise ValueError("Prompt plus output exceeds the model context window. Shorten the prompt or output.")
     evidence = surgery.read_json(Path(request["source"]) / "model_surgery.json")
     capacity = surgery.resources(root)
     ram_gb = evidence["expanded_parameters"] * 4 / surgery.GIB * 1.6 + 1
-    blockers = [] if ram_gb <= capacity.get("memory_available_gb", 0) * .85 else [f"Prompt testing needs about {ram_gb:.2f} GiB available RAM."]
-    return {"ready": not blockers, "blockers": blockers, "estimated_ram_gb": ram_gb, "resources": capacity}
+    available = capacity.get("memory_available_gb", 0)
+    blockers = [] if ram_gb <= available else [f"Prompt testing needs about {ram_gb:.2f} GiB backend RAM including headroom; {available:.2f} GiB is available now."]
+    return {"ready": not blockers, "blockers": blockers, "estimated_ram_gb": ram_gb, "resources": capacity,
+            "prompt_format": prompt_format, "prompt_tokens": length}
 
 
 def refuse_active_training():
@@ -151,13 +222,15 @@ def refuse_active_training():
                 raise ValueError("A core training job is running. Finish or pause it before starting model surgery/healing.")
 
 
-def create_job(body):
+def create_job(body, check=lambda: None):
+    check()
     if any(job["status"] in {"queued", "running"} for job in jobs()):
         raise ValueError("A surgery/healing job is already active. Wait or request cancellation first.")
     refuse_active_training()
     reviewed = preflight(body)
     if not reviewed["plan"]["ready"]:
         raise ValueError(" ".join(reviewed["plan"]["blockers"]))
+    check()
     request = reviewed["request"]
     identifier = uuid.uuid4().hex
     directory = job_path(identifier)
@@ -195,14 +268,86 @@ def save_dataset(body):
     return {"path": str(path), "bytes": path.stat().st_size}
 
 
+def website_build(body):
+    root = STORE / "datasets"
+    root.mkdir(parents=True, exist_ok=True)
+    for status_file in root.glob("*/dataset-status.json"):
+        existing = surgery.read_json(status_file)
+        pid_file = status_file.with_name("process.json")
+        pid = surgery.read_json(pid_file).get("pid") if pid_file.exists() else None
+        if existing.get("status") in {"queued", "running"} and process_alive(pid):
+            raise ValueError("A website dataset collection is already active. Refresh its progress first.")
+    max_pages = surgery.integer(body.get("max_pages", 500), "Page budget", 2)
+    if max_pages > 10000:
+        raise ValueError("Use at most 10,000 pages per snapshot; review coverage before collecting more.")
+    seeds = body.get("seeds") or []
+    if not isinstance(seeds, list) or len(seeds) > 100 or any(not isinstance(seed, str) or len(seed) > 2000 for seed in seeds):
+        raise ValueError("Supply at most 100 additional public Reallexi subdomain URLs.")
+    auto_train = body.get("auto_train") is True
+    recipe = body.get("healing_recipe") or {}
+    if auto_train:
+        if recipe.get("data_rights_confirmed") is not True:
+            raise ValueError("Confirm source rights and held-out separation before automatic training.")
+        parent = job_status(job_path(recipe.get("parent_id")))
+        if parent["status"] != "completed" or parent["operation"] == "probe":
+            raise ValueError("Choose a verified parent checkpoint before automatic training.")
+        healing.options(recipe)
+    identifier = uuid.uuid4().hex
+    directory = root / identifier
+    directory.mkdir()
+    state = {"id": identifier, "status": "queued", "message": "Starting public website collection", "created_at": time.time()}
+    surgery.write_json(directory / "request.json", {"max_pages": max_pages, "seeds": seeds, "auto_train": auto_train, "healing_recipe": recipe})
+    surgery.write_json(directory / "dataset-status.json", state)
+    try:
+        with (directory / "worker.log").open("ab") as log:
+            process = subprocess.Popen([sys.executable, str(MODULE_ROOT / "web_dataset.py"), str(directory)],
+                                       stdout=log, stderr=log, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        state["pid"] = process.pid
+        # Save PID independently so progress written by a fast worker is not overwritten.
+        surgery.write_json(directory / "process.json", {"pid": process.pid})
+        threading.Thread(target=process.wait, daemon=True).start()
+    except Exception as error:
+        state.update(status="failed", message=f"Dataset worker could not start: {error}")
+        surgery.write_json(directory / "dataset-status.json", state)
+        raise
+    return state
+
+
+def website_status(body):
+    identifier = str(body.get("id") or "")
+    if not re.fullmatch(r"[0-9a-f]{32}", identifier):
+        raise ValueError("Invalid website dataset ID.")
+    directory = STORE / "datasets" / identifier
+    state = surgery.read_json(directory / "dataset-status.json")
+    if state["status"] in {"queued", "running"}:
+        process = surgery.read_json(directory / "process.json") if (directory / "process.json").exists() else {}
+        if process.get("pid") and not process_alive(process["pid"]):
+            state = surgery.read_json(directory / "dataset-status.json")
+            if state["status"] in {"queued", "running"}:
+                state.update(status="failed", message="Dataset worker exited. Start a fresh snapshot; previous datasets are preserved.")
+    if body.get("cancel") is True and state["status"] in {"queued", "running"}:
+        (directory / "cancel").touch(exist_ok=True)
+    if body.get("download") is True:
+        if state["status"] != "completed":
+            raise ValueError("Wait for a completed dataset before downloading.")
+        archive = directory / "files/reallexi-knowledge.zip"
+        if archive.stat().st_size > 24 * 1024 * 1024:
+            raise ValueError("Archive exceeds the browser bridge budget. Copy the saved archive from the backend path shown in the results.")
+        return {"filename": f"reallexi-knowledge-{identifier[:8]}.zip", "base64": base64.b64encode(archive.read_bytes()).decode("ascii")}
+    return state
+
+
 def run_api_route(payload, context):
     # Authentication and local-only enforcement are provided by the core route.
     body = payload.get("body") or {}
     route = context.get("unit_id", "").rsplit(".", 1)[-1]
     if route == "catalog":
         STORE.mkdir(parents=True, exist_ok=True)
+        snapshots = list((STORE / "datasets").glob("*/dataset-status.json"))
+        latest = max(snapshots, key=lambda path: path.stat().st_mtime) if snapshots else None
         return {"architectures": sorted(surgery.SUPPORTED), "resources": surgery.resources(STORE),
                 "jobs": jobs(), "model_library": model_library(),
+                "website_dataset": website_status({"id": latest.parent.name}) if latest else None,
                 "help_url": "https://github.com/ddkits/reallexi-ai-model-builder/blob/main/docs/MODEL_SURGERY.md"}
     if route in {"models-list", "models-scan"}:
         return model_library(body.get("directory"))
@@ -214,6 +359,10 @@ def run_api_route(payload, context):
         return {"job": create_job(body)}
     if route == "dataset":
         return save_dataset(body)
+    if route == "website-build":
+        return website_build(body)
+    if route == "website-status":
+        return website_status(body)
     if route == "cancel":
         directory = job_path(body.get("id"))
         state = job_status(directory)
