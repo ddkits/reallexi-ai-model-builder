@@ -1,6 +1,6 @@
 {
   "name": "@ddkits/reallexi-ai-model-builder",
-  "version": "1.4.24",
+  "version": "1.4.25",
   "private": false,
   "description": "Public Reallexi LLC AI Model Builder launcher, docs, and client installation package.",
   "license": "Apache-2.0",
@@ -31,10 +31,10 @@
     "dev": "node scripts/project-public.mjs"
   },
   "reallexi": {
-    "generatedAt": "2026-11-23T16:20:59.382Z",
+    "generatedAt": "2026-11-23T18:03:23.058Z",
     "publicRepository": "ddkits/reallexi-ai-model-builder",
-    "privateCorePackage": "@ddkits/ai-model-builder-core-private@1.4.24",
-    "backendImage": "ghcr.io/ddkits/ai-model-builder-backend:1.4.24",
-    "frontendImage": "ghcr.io/ddkits/ai-model-builder-frontend:1.4.24"
+    "privateCorePackage": "@ddkits/ai-model-builder-core-private@1.4.25",
+    "backendImage": "ghcr.io/ddkits/ai-model-builder-backend:1.4.25",
+    "frontendImage": "ghcr.io/ddkits/ai-model-builder-frontend:1.4.25"
   }
 }

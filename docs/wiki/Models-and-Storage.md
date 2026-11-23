@@ -10,6 +10,13 @@ or session ID, filter by source, and sort by name or modification date. The
 runtime column identifies the local installation that owns each run. Frontends
 connected to the same runtime show the same inventory.
 
+On Windows PCs running both the Docker CUDA and WSL ROCm stacks, the local
+dashboards also combine their jobs in **Queue**, **Training**, and
+**Trained Models**. Use the same job controls from either dashboard. Each
+operation reaches the runtime that owns the job. Model files and datasets
+stay in that runtime's storage. The native Linux ROCm Compose profile
+requires Linux GPU device access. The Windows AMD launcher uses WSL ROCm.
+
 1. Open **Details** beside a run to review its local files and dataset sources.
    Check individual runs or choose **Select all finished**. Then choose
    **Delete selected** to open the combined review. The total counts removable
