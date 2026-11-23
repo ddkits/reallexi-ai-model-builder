@@ -21,6 +21,12 @@ requires Linux GPU device access. The Windows AMD launcher uses WSL ROCm.
    Check individual runs or choose **Select all finished**. Then choose
    **Delete selected** to open the combined review. The total counts removable
    file bytes recursively and counts each selected session once.
+   Selection skips active and paused runs, the models or checkpoints they
+   need, and runs that depend on their outputs. Protected rows remain
+   available for storage inspection.
+   Check **Keep for later** on a run you plan to reuse. That run and the saved
+   model, checkpoint, and prepared data inputs it relies on are protected
+   until you clear the checkbox.
 2. Review the files, related datasets, and any blockers. A run can include
    checkpoints, exports, download archives, prepared data, logs, and history.
    Entire training phase chains and their automatic recovery attempts are
