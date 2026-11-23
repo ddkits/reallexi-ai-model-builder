@@ -94,6 +94,16 @@ separator. Nothing is scanned across the entire drive or home directory.
    training and separate evaluation text, check resources, then select
    **Start healing**. The next-step bar also offers the prompt test afterward.
 
+### Start a training job from a surgery checkpoint
+
+Open **Trained Models** and filter the model library to **Model Surgery**.
+Search by name or run ID, or sort by date or name. Select the expanded or
+healed checkpoint you want and choose **Use for training**.
+New Job opens with the checkpoint selected under **Trained Artifact**.
+Choose a text or code dataset and start your fine-tuning run. Completed
+checkpoints from previous Model Surgery runs appear automatically when their
+verification record and model files are available in the current runtime.
+
 ### What should I pick?
 
 Use **Identity residuals** as the starting initialization and use the size

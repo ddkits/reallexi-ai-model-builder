@@ -1,7 +1,7 @@
 {
   "id": "model-surgery",
   "name": "Model Surgery",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "owner": "Reallexi LLC",
   "license": "Apache-2.0",
   "copyright": "Copyright (c) 2026 Reallexi LLC. All rights reserved.",
@@ -137,7 +137,7 @@
       "mode": "reviewed-code",
       "path": "backend/inventory.py",
       "hook": "api.route.register",
-      "description": "Read-only trained-artifact, merged-export, local-folder, surgery-output, and Hub cache discovery."
+      "description": "Read-only model discovery and verified surgery checkpoint resolution for the training catalog."
     },
     {
       "id": "model-surgery.backend",

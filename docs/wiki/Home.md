@@ -7,6 +7,7 @@ Core backlink: https://llm.reallexi.io
 Public community workflow guides:
 
 - [Model Surgery](Model-Surgery.md): plan depth growth, expand, heal, and evaluate.
+- [Models and storage](Models-and-Storage.md): find sessions and review local storage before purging.
 - [Full Model Surgery reference](../MODEL_SURGERY.md).
 
 These files are the versioned wiki sources included in the public package.

@@ -1,6 +1,6 @@
 # Reallexi AI Model Builder Public Package
 
-[![Version](https://img.shields.io/badge/version-1.4.22-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-1.4.23-blue)](package.json)
 [![License](https://img.shields.io/badge/license-Apache--2.0-informational)](LICENSE)
 [![Guidelines site](https://img.shields.io/badge/guidelines-llm.reallexi.io-6d28d9)](https://llm.reallexi.io)
 
@@ -45,10 +45,25 @@ The launcher uses this release's image tags by default. If an earlier setup
 wrote image overrides into your local environment file, remove those overrides to
 follow the release defaults. Keep any image tags you intentionally pin.
 
+### Model Surgery
+
+The free community extension expands and optionally heals supported Llama and
+Qwen2 checkpoints. Open **Extensions → Model Surgery** to create one.
+In **Trained Models**, filter to **Model Surgery**, select an expanded or
+healed checkpoint, and choose **Use for training**. The model library supports
+search by name or run ID and sorting by date or name. See the
+[Model Surgery guide](docs/MODEL_SURGERY.md) for the full workflow.
+
+### Models and storage
+
+Use **Models** to find training sessions and extension runs, check their deep
+storage totals and related datasets, and review a permanent purge. See the
+[Models and storage guide](docs/wiki/Models-and-Storage.md).
+
 Approved installers receive the runtime through controlled package systems:
 
-* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.4.22` and `ghcr.io/ddkits/ai-model-builder-frontend:1.4.22`
-* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.4.22`
+* Docker/OCI images: `ghcr.io/ddkits/ai-model-builder-backend:1.4.23` and `ghcr.io/ddkits/ai-model-builder-frontend:1.4.23`
+* npm/GitHub Packages: `@ddkits/ai-model-builder-core-private@1.4.23`
 
 See [Core Access](docs/CORE_DISTRIBUTION_GITHUB.md) for authentication and
 troubleshooting.

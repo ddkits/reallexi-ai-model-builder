@@ -10,6 +10,7 @@ import importlib
 import json
 import os
 from pathlib import Path
+import re
 import sqlite3
 
 surgery = importlib.import_module("extensions.plugins.model-surgery.backend.surgery")
@@ -17,6 +18,8 @@ SUPPORTED = surgery.SUPPORTED
 MAX_METADATA_BYTES = 4 * 1024 * 1024
 SCAN_DIRECTORIES = 3000
 SCAN_DEPTH = 5
+TRAINING_KEY_PREFIX = "model-surgery:"
+CHECKPOINT_KEY = re.compile(r"([0-9a-f]{32}):(model|expanded)")
 
 
 def metadata(path):
@@ -78,6 +81,62 @@ def assess(path):
     if not any(nonempty(path / name) for name in ("tokenizer.json", "tokenizer.model", "spiece.model", "vocab.json", "vocab.txt")):
         return reject("Tokenizer files are missing. Select a complete model with its tokenizer.")
     return {**result, "eligible": True, "reason": "Ready for architecture and resource preflight. Weights are verified when the worker runs."}
+
+
+def training_checkpoint(store, key):
+    match = CHECKPOINT_KEY.fullmatch(key.removeprefix(TRAINING_KEY_PREFIX))
+    if not key.startswith(TRAINING_KEY_PREFIX) or not match:
+        raise ValueError("Select a valid Model Surgery checkpoint.")
+    job_id, output = match.groups()
+    directory = store / job_id
+    checkpoint = directory / output
+    if directory.is_symlink() or checkpoint.is_symlink() or not checkpoint.is_dir():
+        raise ValueError("The Model Surgery checkpoint is missing from this runtime.")
+    state = metadata(directory / "status.json")
+    if state.get("status") != "completed" or state.get("operation") not in {"expand", "heal"}:
+        raise ValueError("The Model Surgery run has not published a completed checkpoint.")
+    evidence = metadata(checkpoint / "model_surgery.json")
+    if evidence.get("reload_and_finite_logits") is not True:
+        raise ValueError("The Model Surgery checkpoint has no successful verification record.")
+    details = assess(checkpoint)
+    if not details["eligible"]:
+        raise ValueError(details["reason"])
+    return checkpoint, evidence
+
+
+def training_catalog(store):
+    entries = []
+    for directory in sorted(store.glob("*")):
+        for output in ("model", "expanded"):
+            key = f"{TRAINING_KEY_PREFIX}{directory.name}:{output}"
+            try:
+                checkpoint, evidence = training_checkpoint(store, key)
+                updated_at = (checkpoint / "model_surgery.json").stat().st_mtime
+            except (OSError, ValueError):
+                continue
+            parameters = evidence.get("expanded_parameters")
+            has_parameter_count = isinstance(parameters, int) and parameters > 0
+            name = evidence.get("model_name") or (
+                surgery.lexi_name(parameters) if has_parameter_count else "Lexi checkpoint"
+            )
+            stage = "Healed" if evidence.get("status") == "trained_needs_quality_review" else "Expanded"
+            entries.append({
+                "key": key,
+                "id": key,
+                "family": "trained",
+                "extension_id": "model-surgery",
+                "display_name": name,
+                "surgery_stage": stage,
+                "surgery_run_id": directory.name[:8],
+                "updated_at": updated_at,
+                "description": f"{stage} · Model Surgery run {directory.name[:8]}",
+                "size": f"{parameters / 1e9:.3f}B" if has_parameter_count else "",
+                "artifact_type": "full_model",
+                "modality": "text",
+                "can_train_as_base": True,
+                "local": True,
+            })
+    return entries
 
 
 def registered_jobs(data_root, warnings):

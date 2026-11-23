@@ -8,6 +8,7 @@ const count = (n) => Number(n).toLocaleString('en-US');
 const size = (n) => Number(n) >= 1e9 ? `${(Number(n) / 1e9).toFixed(3)}B` : Number(n) >= 1e6 ? `${(Number(n) / 1e6).toFixed(2)}M` : count(n);
 const checkpointName = (job) => job.evidence?.model_name || `Lexi ${size(job.evidence?.expanded_parameters || 0)}`;
 const isHealed = (job) => job.evidence?.status === 'trained_needs_quality_review' || job.operation === 'heal';
+const autoHealEnabled = () => Boolean($('heal-after-expand')?.checked);
 function element(tag, text, className) {
   const node = document.createElement(tag);
   if (text !== undefined) node.textContent = text;
@@ -18,7 +19,7 @@ function error(message = '') { $('error').textContent = message; $('error').hidd
 function request(path, method = 'GET', body = null) {
   if (!state.connected && path !== 'catalog') return Promise.reject(new Error('Connect the workspace first using Plugin Admin Unlock above.'));
   if (window.parent === window) return Promise.reject(new Error('Open Model Surgery inside the Extensions workspace to use the local Admin bridge.'));
-  const requestId = crypto.randomUUID();
+  const requestId = globalThis.crypto?.randomUUID?.() || `request-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => { pending.delete(requestId); reject(new Error('The request timed out. Reconnect and check history before starting another run.')); }, 120000);
     pending.set(requestId, { resolve, reject, timer });
@@ -53,28 +54,31 @@ document.querySelectorAll('[data-step]').forEach((button) => button.addEventList
 function expansion() {
   const request = { operation: 'expand', source: $('source').value.trim(), revision: $('revision').value.trim() || 'main',
     first: $('first').value, count: $('count').value, copies: $('copies').value, initialization: $('initialization').value };
-  if ($('heal-after-expand').checked) request.healing_recipe = healingRecipe();
+  if (autoHealEnabled()) request.healing_recipe = healingRecipe();
   return request;
 }
 function healingRecipe() {
   return { train_file: $('train-file').value.trim(), eval_file: $('eval-file').value.trim(),
     train_scope: $('train-scope').value, device: $('device').value, steps: $('steps').value, sequence_length: $('sequence-length').value,
-    learning_rate: $('learning-rate').value, accumulation: $('accumulation').value, eval_blocks: $('eval-blocks').value, optimizer: $('optimizer').value,
+    learning_rate: $('learning-rate').value, accumulation: $('accumulation').value, eval_blocks: $('eval-blocks').value, optimizer: $('optimizer')?.value || 'auto',
     data_rights_confirmed: $('rights').checked };
 }
 function healing() { return { operation: 'heal', parent_id: $('heal-parent').value, ...healingRecipe() }; }
 function invalidateExpansion() { state.plan = null; $('plan-results').hidden = true; }
 function healingRecipeChanged() {
   state.healPlan = null; $('heal-results').hidden = true;
-  if ($('heal-after-expand').checked) invalidateExpansion();
+  if (autoHealEnabled()) invalidateExpansion();
+}
+function expansionDescription() {
+  return autoHealEnabled()
+    ? 'Review both stages. Training starts automatically after the expanded checkpoint is verified.'
+    : 'Expansion saves a new checkpoint. You can heal it from Run history.';
 }
 function active() { return state.jobs.find((job) => ['queued', 'running'].includes(job.status)); }
 function updateButtons() {
-  const autoHeal = $('heal-after-expand').checked;
-  $('expand').textContent = autoHeal ? 'Expand & train' : 'Start expansion';
-  $('expansion-description').textContent = autoHeal
-    ? 'Review both stages. Training starts automatically after the expanded checkpoint is verified.'
-    : 'Expansion saves a new checkpoint. You can heal it from Run history.';
+  $('expand').textContent = autoHealEnabled() ? 'Expand & train' : 'Start expansion';
+  const description = $('expansion-description');
+  if (description) description.textContent = expansionDescription();
   $('expand').disabled = state.busy || Boolean(active()) || !state.plan?.plan.ready;
   $('expand').disabled ||= Boolean(state.selectedModel && !state.selectedModel.eligible);
   $('heal').disabled = state.busy || Boolean(active()) || !state.healPlan?.plan.ready;
@@ -87,9 +91,10 @@ function updateButtons() {
   for (const prefix of ['train','eval']) $(`${prefix}-upload`).disabled = state.busy || !state.connected;
   $('revision').disabled = state.busy || Boolean(state.selectedModel);
   document.querySelectorAll('[data-growth]').forEach((button) => { button.disabled = state.busy || !state.plan; });
-  $('website-build').disabled = state.busy || !state.connected || Boolean(state.website && ['queued','running'].includes(state.website.status));
-  for (const id of ['website-download','website-use']) $(id).disabled = state.busy || !state.connected;
-  $('full-gpu-pilot').disabled = state.busy || !state.connected;
+  if ($('website-build')) {
+    $('website-build').disabled = state.busy || !state.connected || Boolean(state.website && ['queued','running'].includes(state.website.status));
+    for (const id of ['website-download','website-use','full-gpu-pilot']) $(id).disabled = state.busy || !state.connected;
+  }
   nextAction();
 }
 function nextAction() {
@@ -109,7 +114,7 @@ function nextAction() {
       } else {
         const plan = state.plan.plan;
         title = plan.ready ? 'Ready to create the larger checkpoint' : 'Expansion is blocked';
-        detail = plan.ready ? `${size(plan.original_parameters)} → ${size(plan.expanded_parameters)} parameters. ${$('expansion-description').textContent}` : plan.blockers.join(' ');
+        detail = plan.ready ? `${size(plan.original_parameters)} → ${size(plan.expanded_parameters)} parameters. ${expansionDescription()}` : plan.blockers.join(' ');
         label = $('expand').textContent; disabled ||= $('expand').disabled; run = () => $('expand').click();
       }
     } else if (state.step === 'heal' && checkpoint) {
@@ -118,7 +123,7 @@ function nextAction() {
       label = state.healPlan ? 'Start healing' : 'Check healing & continue';
       disabled ||= Boolean(state.healPlan && $('heal').disabled);
       run = () => state.healPlan ? $('heal').click() : $('heal-form').requestSubmit();
-      if (!$('train-file').value.trim() || !$('eval-file').value.trim()) {
+      if ($('website-build') && (!$('train-file').value.trim() || !$('eval-file').value.trim())) {
         const collecting = state.website && ['queued','running'].includes(state.website.status);
         title = collecting ? 'Preparing the Reallexi dataset' : 'Next: choose your training text';
         detail = collecting ? `${state.website.documents || 0} documents collected. Training and evaluation paths will fill when ready.` : 'Build the Reallexi website dataset, or provide your own training and separate evaluation files below.';
@@ -180,7 +185,7 @@ $('plan-form').addEventListener('input', (event) => {
   if (event.target.id === 'source') { state.selectedModel = null; $('source-model').value = ''; $('selected-model').hidden = true; }
   invalidateExpansion(); updateButtons();
 });
-$('configure-auto-heal').addEventListener('click', () => { view('heal'); $('train-file').focus(); });
+$('configure-auto-heal')?.addEventListener('click', () => { view('heal'); $('train-file').focus(); });
 $('heal-form').addEventListener('input', () => { healingRecipeChanged(); updateButtons(); });
 $('heal-parent').addEventListener('change', () => { state.healPlan = null; $('heal-results').hidden = true; updateButtons(); });
 $('plan-form').addEventListener('invalid', (event) => { const details = event.target.closest('details'); if (details) details.open = true; }, true);
@@ -222,7 +227,7 @@ async function connect() {
   for (const accelerator of result.resources.accelerators || []) if (accelerator.usable && accelerator.torch_device?.startsWith('cuda:')) $('device').add(new Option(`${accelerator.name} (${accelerator.torch_device})`, accelerator.torch_device));
   if ([...$('device').options].some((option) => option.value === selected)) $('device').value = selected;
   renderJobs(); updateParents();
-  if (result.website_dataset) {
+  if (result.website_dataset && $('website-build')) {
     state.website = result.website_dataset; renderWebsite();
     if (state.website.status === 'completed' && !$('train-file').value && !$('eval-file').value) useWebsiteFiles();
   }
@@ -345,7 +350,7 @@ for (const prefix of ['train','eval']) $(`${prefix}-upload`).addEventListener('c
   healingRecipeChanged();
 }));
 $('probe-form').addEventListener('submit', (event) => { event.preventDefault(); action(async () => {
-  await request('jobs','POST',{operation:'probe',parent_id:$('probe-parent').value,prompt:$('prompt').value,prompt_format:$('prompt-format').value,max_new_tokens:$('new-tokens').value});
+  await request('jobs','POST',{operation:'probe',parent_id:$('probe-parent').value,prompt:$('prompt').value,prompt_format:$('prompt-format')?.value || 'auto',max_new_tokens:$('new-tokens').value});
   await refresh(); view('history');
 }); });
 setInterval(() => { if (state.connected && !state.busy && active()) action(refresh); }, 2500);
@@ -368,18 +373,18 @@ function renderWebsite() {
     if (result.healing_job) target.append(element('p', `Full-model healing run: ${result.healing_job.slice(0,8)}. Follow progress in Run history.`));
   }
 }
-$('website-build').addEventListener('click', () => action(async () => {
+$('website-build')?.addEventListener('click', () => action(async () => {
   const auto = $('website-auto').checked;
   const recipe = healing();
   if (auto && (!recipe.parent_id || !recipe.data_rights_confirmed)) throw new Error('For automatic training, select a verified parent and confirm data rights below before collecting.');
   state.website = await request('website-build','POST',{max_pages:$('website-pages').value,seeds:$('website-seeds').value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean),auto_train:auto,healing_recipe:recipe});
   renderWebsite();
 }));
-$('website-cancel').addEventListener('click', () => action(async () => {
+$('website-cancel')?.addEventListener('click', () => action(async () => {
   await request('website-status','POST',{id:state.website.id,cancel:true});
   $('website-status').append(element('p', 'Cancellation requested. The current network request may take up to 20 seconds to finish.'));
 }));
-$('website-download').addEventListener('click', () => action(async () => {
+$('website-download')?.addEventListener('click', () => action(async () => {
   const result = await request('website-status','POST',{id:state.website.id,download:true});
   const bytes = Uint8Array.from(atob(result.base64), (character) => character.charCodeAt(0));
   const url = URL.createObjectURL(new Blob([bytes],{type:'application/zip'}));
@@ -390,8 +395,8 @@ function useWebsiteFiles() {
   $('train-file').value = state.website.result.train_file; $('eval-file').value = state.website.result.eval_file;
   healingRecipeChanged(); updateButtons();
 }
-$('website-use').addEventListener('click', () => { useWebsiteFiles(); view('heal'); $('heal-parent').scrollIntoView({block:'center'}); $('heal-parent').focus(); });
-$('full-gpu-pilot').addEventListener('click', () => {
+$('website-use')?.addEventListener('click', () => { useWebsiteFiles(); view('heal'); $('heal-parent').scrollIntoView({block:'center'}); $('heal-parent').focus(); });
+$('full-gpu-pilot')?.addEventListener('click', () => {
   const gpu = [...$('device').options].find((option) => option.value.startsWith('cuda:'));
   if (!gpu) { error('No CUDA GPU is available to this runtime. Choose CPU with standard AdamW or update GPU access first.'); updateButtons(); return; }
   $('device').value = gpu.value; $('train-scope').value = 'full'; $('optimizer').value = 'auto';

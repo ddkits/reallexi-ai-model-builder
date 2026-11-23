@@ -33,8 +33,9 @@ the existing Plugin Admin Unlock. This free community extension offers:
 3. **Review & use:** compare held-out loss from the starting model, expanded
    checkpoint, and healed candidate in a combined run. Test representative
    chat prompts with the model's template or choose raw completion. Use the verified
-   output folder with Transformers. Check representative external benchmarks
-   before deployment.
+   output folder with Transformers, or filter **Trained Models** to
+   **Model Surgery**, select the checkpoint, and choose **Use for training**.
+   Check representative external benchmarks before deployment.
 4. **Run history:** inspect progress, cancellation, parentage, exact model size,
    output location, and saved evidence.
 
