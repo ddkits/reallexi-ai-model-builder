@@ -132,6 +132,7 @@ def training_catalog(store):
                 "description": f"{stage} · Model Surgery run {directory.name[:8]}",
                 "size": f"{parameters / 1e9:.3f}B" if has_parameter_count else "",
                 "artifact_type": "full_model",
+                "standalone_base": True,
                 "modality": "text",
                 "can_train_as_base": True,
                 "local": True,

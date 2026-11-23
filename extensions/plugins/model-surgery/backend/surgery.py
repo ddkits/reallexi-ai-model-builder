@@ -36,10 +36,12 @@ def model_card(destination, evidence):
     import re
     upstream = source if re.fullmatch(r"[\w.-]+/[\w.-]+", source) else ""
     header = f"---\nmodel_name: {name}\nlibrary_name: transformers\npipeline_tag: text-generation\n"
-    if upstream:
-        header += f"base_model: {upstream}\n"
     header += "tags:\n- lexi\n- reallexi\n---\n"
-    text = f"{header}\n# {name}\n\nA full Lexi checkpoint with {evidence['expanded_parameters']:,} parameters.\n\nStatus: {evidence['status']}. Expansion and successful reload do not certify model quality. Review held-out results and representative tasks before deployment.\n\n"
+    text = (
+        f"{header}\n# {name}\n\nA standalone Lexi base checkpoint with {evidence['expanded_parameters']:,} "
+        "parameters. Use its included weights, configuration, and tokenizer for inference or further training.\n\n"
+        f"Status: {evidence['status']}. Review held-out results and representative tasks before deployment.\n\n"
+    )
     if upstream:
         text += f"Upstream source: https://huggingface.co/{upstream}\n\n"
     if "after_evaluation" in evidence:
@@ -48,7 +50,7 @@ def model_card(destination, evidence):
             if key in evidence:
                 results.append(f"{label} {evidence[key]['loss']:.4f}")
         text += f"Held-out loss ({evidence['after_evaluation']['tokens']:,} tokens): {', '.join(results)}.\n\n"
-    text += f"Created using Reallexi LLC AI Model Builder: {ATTRIBUTION['core_backlink']}\n\nTool attribution: {ATTRIBUTION['tool_copyright']}\n\nUpstream models and datasets retain their licenses and terms. Architecture identifiers in config.json remain load-compatible. See model_surgery.json for lineage and verification evidence.\n"
+    text += f"Created using Reallexi LLC AI Model Builder: {ATTRIBUTION['core_backlink']}\n\n{ATTRIBUTION['tool_copyright']}\n\nUpstream models and datasets retain their licenses and terms. Architecture identifiers in config.json remain load-compatible. See model_surgery.json for lineage and verification evidence.\n"
     (Path(destination) / "README.md").write_text(text, encoding="utf-8")
 
 
@@ -286,6 +288,7 @@ def surgery(source: str, destination: str, first: int, count: int, copies: int,
                 "original_parameters": before, "expanded_parameters": after,
                 "layer_map": plan, "inserted_layers": list(range(first + count, first + count + count * copies)),
                 "initialization": initialization, "status": "needs_healing", "reload_and_finite_logits": True,
+                "standalone_base": True,
                 "identity_probe_preserved": identity_preserved, "quality_validated": False,
                 **ATTRIBUTION}
     if source_baseline:

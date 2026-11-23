@@ -50,6 +50,14 @@
   ],
   "api_routes": [
     {
+      "id": "model-surgery.hub-base-check",
+      "method": "POST",
+      "path": "/extensions/runtime/model-surgery/hub-base-check",
+      "target": "reviewed-code",
+      "auth": "admin-token",
+      "handler": "model-surgery.backend:run_api_route"
+    },
+    {
       "id": "model-surgery.models-list",
       "method": "GET",
       "path": "/extensions/runtime/model-surgery/models",

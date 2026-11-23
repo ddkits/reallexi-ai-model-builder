@@ -10,6 +10,10 @@ or session ID, filter by source, and sort by name or modification date. The
 runtime column identifies the local installation that owns each run. Frontends
 connected to the same runtime show the same inventory.
 
+Open **All model outputs** to see completed model files, downloadable
+exports, and retained checkpoints. Use **Details** to find the owning
+runtime and inspect the available files before reuse.
+
 On Windows PCs running both the Docker CUDA and WSL ROCm stacks, the local
 dashboards also combine their jobs in **Queue**, **Training**, and
 **Trained Models**. Use the same job controls from either dashboard. Each

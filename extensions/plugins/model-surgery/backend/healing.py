@@ -262,6 +262,7 @@ def heal(source, destination, request, check=lambda: None, progress=lambda **kw:
     surgery.finite_probe(loaded, tokenizer)
     provenance.update(surgery.ATTRIBUTION, model_name=surgery.lexi_name(provenance["expanded_parameters"]),
                       base_model_type=loaded.config.model_type,
+                      standalone_base=True,
                       status="trained_needs_quality_review", quality_validated=False,
                       trainable_parameters=trainable_count, training_tokens=consumed, repeated_passes=repeats,
                       before_evaluation=baseline, after_evaluation=result, loss_improved=result["loss"] < baseline["loss"],

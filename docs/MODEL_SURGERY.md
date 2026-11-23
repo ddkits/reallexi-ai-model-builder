@@ -278,6 +278,28 @@ standard Transformers configuration, SafeTensors weights, tokenizer, and
 parent in this workspace. Healing from a previous healed checkpoint starts a
 fresh optimizer. Ordinary training history and export workflows are separate.
 
+## Reuse a surgery checkpoint as a base
+
+After the reload check succeeds, choose **New Job → Model Source → Model Surgery
+Base** or open the result in **Trained Models** and choose **Use as base model**.
+Each verified Lexi checkpoint carries its own weights, configuration, and
+tokenizer. Its card records upstream lineage and preserved license notices.
+Healing and held-out tests help determine which checkpoint to use.
+
+To publish a newly built base before training another model from it, open its
+verified result in **Trained Models → Model Surgery**. Under **Publish this
+standalone base**, choose a fresh Hub model repository and visibility, check
+the repository, and use **Upload exact base** when it is missing. This flow
+works directly from the full checkpoint.
+
+When publishing a version trained on a local surgery checkpoint, use the
+**Publish** tab to check the base's Hugging Face repository. The check compares
+the Hub's weight hashes with the local checkpoint. If the base is missing,
+**Upload exact base** publishes the full checkpoint using the chosen
+visibility. Publish the derived version to a separate repository after
+verification. The version's published card and adapter configuration refer
+to the verified Hugging Face base.
+
 ## Recovery and troubleshooting
 
 - **Insufficient memory or disk:** reduce added layers, sequence length, or the

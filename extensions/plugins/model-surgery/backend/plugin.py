@@ -341,6 +341,27 @@ def run_api_route(payload, context):
     # Authentication and local-only enforcement are provided by the core route.
     body = payload.get("body") or {}
     route = context.get("unit_id", "").rsplit(".", 1)[-1]
+    if route == "hub-base-check":
+        from backend.hub_base import job_surgery_publish_source, verify_hub_base_checkpoint
+
+        if (payload.get("auth") or {}).get("role") != "admin":
+            raise ValueError("The Hugging Face base check requires local Admin access.")
+        if not isinstance(body, dict):
+            raise ValueError("Provide a base-check request object.")
+        repository = body.get("repository")
+        if not isinstance(repository, str) or not 3 <= len(repository.strip()) <= 160:
+            raise ValueError("Enter a Hugging Face model repository ID.")
+        key = body.get("checkpoint_key")
+        job_id = body.get("job_id")
+        if isinstance(key, str) and key and job_id is None:
+            checkpoint, _ = inventory.training_checkpoint(STORE, key)
+        elif type(job_id) is int and job_id > 0 and key is None:
+            checkpoint = job_surgery_publish_source(job_id, body.get("artifact_variant", "source"))
+        else:
+            raise ValueError("Select one verified Model Surgery checkpoint or a completed training job.")
+        result = verify_hub_base_checkpoint(checkpoint, repository)
+        evidence = inventory.metadata(checkpoint / "model_surgery.json")
+        return {**result, "check_only": True, "checkpoint_name": evidence.get("model_name", "Lexi checkpoint")}
     if route == "catalog":
         STORE.mkdir(parents=True, exist_ok=True)
         snapshots = list((STORE / "datasets").glob("*/dataset-status.json"))

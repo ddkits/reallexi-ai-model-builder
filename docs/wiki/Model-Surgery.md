@@ -45,6 +45,14 @@ Expansion always creates a separate checkpoint. Healing creates another one.
 Outputs display **Lexi {size}B** and new files save the measured model name.
 The architecture identifiers and source dependencies needed for loading remain
 valid; upstream attribution and license requirements remain attached.
+
+To use a new standalone output as the base for future versions, open local
+Hugging Face publishing, choose a repository ID you control, and check whether
+it exists. If you are publishing the new base for the first time, choose the
+standalone base option and verify the uploaded repository before referencing
+it from a later model version. Select visibility for each repository. Export
+a standalone checkpoint for public distribution when public users should be
+able to load it independently of a private base and the license permits it.
 Larger size alone is not a quality result, and there is no universal healing
 token budget. Frozen original weights can still produce changed outputs when
 new layers are trained.
