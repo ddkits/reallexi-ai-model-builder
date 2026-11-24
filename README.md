@@ -56,6 +56,8 @@ healed checkpoint, and choose **Use for training**. The model library supports
 search by name or run ID and sorting by date or name. See the
 [Model Surgery guide](docs/MODEL_SURGERY.md) for the full workflow.
 
+A recent local Phi-3 verification expanded a 3.836B checkpoint to 3.937B and passed its initial output check. The estimated expansion RAM fell from 24.47 GiB to 5.43 GiB. The upcoming runtime update brings smart resource planning to expansion and full-model training on supported workstations.
+
 ### Models and storage
 
 On supported Windows setups, one local workspace shows CUDA and ROCm jobs,

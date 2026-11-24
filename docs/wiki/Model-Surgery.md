@@ -41,6 +41,8 @@ the existing Plugin Admin Unlock. This free community extension offers:
 
 There is no fixed upper model size. Reachable sizes grow in complete layers;
 architecture compatibility and available resources determine feasibility.
+In a local Phi-3 verification, a 3.836B checkpoint expanded to 3.937B and passed its initial output check. The estimated expansion RAM was 5.43 GiB, down from 24.47 GiB. Smart resource planning for expansion and resumable full-model training is in the upcoming runtime update.
+
 Expansion always creates a separate checkpoint. Healing creates another one.
 Outputs display **Lexi {size}B** and new files save the measured model name.
 The architecture identifiers and source dependencies needed for loading remain
