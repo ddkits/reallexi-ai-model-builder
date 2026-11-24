@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "prompts": [
+    {
+      "prompt": "Explain how to choose a stable sort for a list of appointments. Include an example with two appointments at the same time.",
+      "explain": true
+    },
+    {
+      "prompt": "Write a JavaScript function that totals nonnegative whole cents. Include tests for an empty list, invalid input, and integer overflow.",
+      "coding": true,
+      "explain": true
+    },
+    {
+      "prompt": "Check whether study room A can be booked at 14:00 and summarize the available time.",
+      "tools": [
+        {
+          "name": "lookup_room",
+          "description": "Find openings for a library study room.",
+          "parameters": {
+            "type": "object",
+            "properties": { "room": { "type": "string" } },
+            "required": ["room"]
+          }
+        }
+      ],
+      "calls": [
+        {
+          "tool": "lookup_room",
+          "arguments": { "room": "A" },
+          "result": "Room A is available from 14:00 to 15:00."
+        }
+      ]
+    }
+  ]
+}

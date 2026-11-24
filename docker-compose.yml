@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ${REALLEXI_BACKEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-backend:1.4.27}
+    image: ${REALLEXI_BACKEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-backend:1.4.28}
     restart: unless-stopped
     environment:
       PYTHONUNBUFFERED: "1"
@@ -11,6 +11,9 @@ services:
       TOKENIZERS_PARALLELISM: "false"
       REALLEXI_PUBLIC_PACKAGE: "true"
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      REALLEXI_ONLINE_TEACHER_URL: ${REALLEXI_ONLINE_TEACHER_URL:-}
+      REALLEXI_ONLINE_TEACHER_API_KEY: ${REALLEXI_ONLINE_TEACHER_API_KEY:-}
+      REALLEXI_ONLINE_TEACHER_MODELS: ${REALLEXI_ONLINE_TEACHER_MODELS:-}
       REALLEXI_PROJECT_ROOT: ${PWD}
       REALLEXI_BACKEND_DATA_DIR: ${PWD}/data/backend
     volumes:
@@ -26,7 +29,7 @@ services:
       retries: 12
 
   frontend:
-    image: ${REALLEXI_FRONTEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-frontend:1.4.27}
+    image: ${REALLEXI_FRONTEND_IMAGE:-ghcr.io/ddkits/ai-model-builder-frontend:1.4.28}
     restart: unless-stopped
     depends_on:
       backend:

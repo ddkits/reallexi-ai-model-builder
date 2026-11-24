@@ -9,11 +9,14 @@ const publicRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
 const inRoot = (file) => path.join(publicRoot, file);
 
 const required = [
+  '.env.example',
   'README.md',
   'AGENTS.md',
   'LICENSE',
   'NOTICE',
   'COPYRIGHT.md',
+  'CHANGELOG.md',
+  'examples/learning-prompt-pack.example.json',
   'CONTRIBUTING.md',
   'CODE_OF_CONDUCT.md',
   'SECURITY.md',
@@ -47,7 +50,6 @@ const required = [
 const allowedFiles = new Set([
   ...required,
   ...["extensions/plugins/model-surgery/plugin.json","extensions/plugins/model-surgery/README.md","extensions/plugins/model-surgery/backend/plugin.py","extensions/plugins/model-surgery/backend/surgery.py","extensions/plugins/model-surgery/backend/healing.py","extensions/plugins/model-surgery/backend/inventory.py","extensions/plugins/model-surgery/backend/web_dataset.py","extensions/plugins/model-surgery/backend/phases.py","extensions/plugins/model-surgery/backend/worker.py","extensions/plugins/model-surgery/ui/index.html","extensions/plugins/model-surgery/ui/styles.css","extensions/plugins/model-surgery/ui/app.js","docs/MODEL_SURGERY.md","docs/wiki/Home.md","docs/wiki/Model-Surgery.md","docs/wiki/Models-and-Storage.md","docs/wiki/_Sidebar.md"],
-  '.env.example',
   '.gitignore',
   '.npmrc.example',
   'agent.md',
@@ -117,6 +119,19 @@ const publicTextFiles = allFiles.filter((file) => {
 });
 
 const packageMetadata = JSON.parse(fs.readFileSync(inRoot('package.json'), 'utf8'));
+const environmentExample = fs.readFileSync(inRoot('.env.example'), 'utf8').split(/\r?\n/);
+for (const [key, expected] of [
+  ['REALLEXI_BACKEND_IMAGE', packageMetadata.reallexi.backendImage],
+  ['REALLEXI_FRONTEND_IMAGE', packageMetadata.reallexi.frontendImage],
+  ['ADMIN_TOKEN', ''],
+  ['REALLEXI_ONLINE_TEACHER_API_KEY', ''],
+]) {
+  const entries = environmentExample.filter(line => line.startsWith(key + '='));
+  if (entries.length !== 1 || entries[0] !== key + '=' + expected) {
+    console.error('[public] Unexpected release setting in .env.example: ' + key);
+    process.exit(1);
+  }
+}
 const publicScripts = new Set(Object.keys(packageMetadata.scripts || {}));
 const allowedGithubPrefixes = [
   'https://github.com/ddkits/reallexi-ai-model-builder',
